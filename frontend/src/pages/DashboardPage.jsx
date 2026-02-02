@@ -412,14 +412,7 @@ const DashboardPage = () => {
                                                 <td className="py-4 px-6 text-emerald-600">{formatCurrency(booking.advance_paid || 0)}</td>
                                                 <td className="py-4 px-6 text-orange-600 font-medium">{formatCurrency(booking.balance_due || 0)}</td>
                                                 <td className="py-4 px-6">
-                                                    <Badge className={`rounded-full px-3 py-1 text-xs font-medium ${
-                                                        booking.status === 'confirmed' ? 'bg-emerald-100 text-emerald-700' :
-                                                        booking.status === 'enquiry' ? 'bg-amber-100 text-amber-700' :
-                                                        booking.status === 'completed' ? 'bg-blue-100 text-blue-700' :
-                                                        'bg-rose-100 text-rose-700'
-                                                    }`}>
-                                                        {booking.status}
-                                                    </Badge>
+                                                    <StatusBadge type="booking" status={booking.status} size="sm" />
                                                 </td>
                                             </motion.tr>
                                         ))
