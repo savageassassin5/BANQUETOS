@@ -80,14 +80,20 @@ const PaymentsPage = () => {
             toast.error('Please select booking and enter amount');
             return;
         }
+        setIsSubmitting(true);
+        setSaveStatus('saving');
         try {
             await paymentsAPI.create(form);
+            setSaveStatus('saved');
             toast.success('Payment recorded');
             loadData();
             setDialogOpen(false);
             resetForm();
         } catch (error) {
+            setSaveStatus('error');
             toast.error('Failed to record payment');
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
