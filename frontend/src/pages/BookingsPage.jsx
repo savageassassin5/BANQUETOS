@@ -201,6 +201,17 @@ const BookingsPage = () => {
                 </CardContent>
             </Card>
 
+            {/* Today's Events Alert */}
+            {todayCount > 0 && (
+                <IntelligenceCue 
+                    type="info"
+                    message={`${todayCount} event${todayCount > 1 ? 's' : ''} scheduled for today`}
+                    subtext="These are highlighted in the table below"
+                    icon={Calendar}
+                    dismissible={true}
+                />
+            )}
+
             {/* Bookings Table */}
             <Card>
                 <CardContent className="p-0">
