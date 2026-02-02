@@ -161,7 +161,7 @@ const DashboardPage = () => {
                             Dashboard
                         </h1>
                     </div>
-                    <p className="text-slate-500">Welcome back! Here's your banquet overview.</p>
+                    <p className="text-slate-500">Welcome back! Here&apos;s your banquet overview.</p>
                 </div>
                 <div className="flex gap-3">
                     <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
