@@ -45,10 +45,17 @@ logger = logging.getLogger(__name__)
 
 # ==================== ENUMS ====================
 class UserRole(str, Enum):
-    ADMIN = "admin"
+    SUPER_ADMIN = "super_admin"  # Platform super admin
+    TENANT_ADMIN = "tenant_admin"  # Tenant owner/admin
+    ADMIN = "admin"  # Legacy admin (maps to tenant_admin)
     RECEPTION = "reception"
     STAFF = "staff"
     CUSTOMER = "customer"
+
+class TenantStatus(str, Enum):
+    ACTIVE = "active"
+    SUSPENDED = "suspended"
+    TRIAL = "trial"
 
 class SlotType(str, Enum):
     DAY = "day"      # 10:00 AM - 05:00 PM
@@ -83,6 +90,50 @@ class MenuType(str, Enum):
     NON_VEG = "non_veg"
     MIXED = "mixed"
 
+# ==================== MULTI-TENANT MODELS ====================
+class PlanCreate(BaseModel):
+    name: str
+    description: str = ""
+    features: dict = {}
+
+class Plan(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str
+    description: str = ""
+    features: dict = {}  # {bookings: true, calendar: true, ...}
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class TenantCreate(BaseModel):
+    business_name: str
+    country: str = "India"
+    timezone: str = "Asia/Kolkata"
+    currency: str = "INR"
+    status: TenantStatus = TenantStatus.ACTIVE
+    plan_id: Optional[str] = None
+    features_override: dict = {}
+
+class TenantUpdate(BaseModel):
+    business_name: Optional[str] = None
+    country: Optional[str] = None
+    timezone: Optional[str] = None
+    currency: Optional[str] = None
+    status: Optional[TenantStatus] = None
+    plan_id: Optional[str] = None
+    features_override: Optional[dict] = None
+
+class Tenant(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    business_name: str
+    country: str = "India"
+    timezone: str = "Asia/Kolkata"
+    currency: str = "INR"
+    status: TenantStatus = TenantStatus.ACTIVE
+    plan_id: Optional[str] = None
+    features_override: dict = {}  # Per-tenant feature overrides
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
 # ==================== MODELS ====================
 class UserCreate(BaseModel):
     name: str
@@ -90,6 +141,7 @@ class UserCreate(BaseModel):
     password: str
     phone: str
     role: UserRole = UserRole.CUSTOMER
+    tenant_id: Optional[str] = None
 
 class UserLogin(BaseModel):
     email: EmailStr
@@ -102,11 +154,26 @@ class User(BaseModel):
     email: EmailStr
     phone: str
     role: UserRole
+    tenant_id: Optional[str] = None  # Null for super_admin
+    status: str = "active"  # active, disabled
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class UserResponse(BaseModel):
+    """User response with tenant info and effective features"""
+    model_config = ConfigDict(extra="ignore")
+    id: str
+    name: str
+    email: EmailStr
+    phone: str
+    role: str
+    tenant_id: Optional[str] = None
+    tenant_status: Optional[str] = None
+    effective_features: dict = {}
 
 class TokenResponse(BaseModel):
     token: str
-    user: User
+    user: UserResponse
+
 
 class HallCreate(BaseModel):
     name: str
