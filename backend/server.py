@@ -4274,6 +4274,287 @@ async def delete_tenant_user(tenant_id: str, user_id: str, current_user: dict = 
     await db.users.delete_one({"id": user_id})
     return {"message": "User deleted"}
 
+# ==================== SUPER ADMIN - TENANT CONFIG ====================
+
+@api_router.get("/superadmin/countries")
+async def get_country_configs(current_user: dict = Depends(get_current_user)):
+    """Get all supported countries with their default configurations"""
+    require_super_admin(current_user)
+    return COUNTRY_CONFIGS
+
+@api_router.get("/superadmin/tenants/{tenant_id}/config")
+async def get_tenant_config(tenant_id: str, current_user: dict = Depends(get_current_user)):
+    """Get complete tenant configuration"""
+    require_super_admin(current_user)
+    
+    # Check if config exists
+    config = await db.tenant_configs.find_one({"tenant_id": tenant_id}, {"_id": 0})
+    
+    if not config:
+        # Get tenant to auto-create config
+        tenant = await db.tenants.find_one({"id": tenant_id}, {"_id": 0})
+        if not tenant:
+            raise HTTPException(status_code=404, detail="Tenant not found")
+        
+        # Create default config based on tenant's country
+        country = tenant.get('country', 'India')
+        country_defaults = COUNTRY_CONFIGS.get(country, COUNTRY_CONFIGS['India'])
+        
+        default_config = TenantConfig(
+            tenant_id=tenant_id,
+            country=country,
+            timezone=country_defaults['timezone'],
+            currency=country_defaults['currency'],
+            currency_symbol=country_defaults['currency_symbol'],
+            tax_type=country_defaults['tax_type'],
+            date_format=country_defaults['date_format'],
+            time_format=country_defaults['time_format'],
+            financial_controls=FinancialControls(
+                tax_rate=country_defaults['tax_rate'],
+                tax_type=country_defaults['tax_type']
+            ),
+            event_templates=[
+                EventTypeTemplate(name="Wedding", default_advance_percent=50, profit_target_percent=30).model_dump(),
+                EventTypeTemplate(name="Birthday", default_advance_percent=30, profit_target_percent=25).model_dump(),
+                EventTypeTemplate(name="Corporate", default_advance_percent=40, profit_target_percent=35).model_dump(),
+                EventTypeTemplate(name="Reception", default_advance_percent=50, profit_target_percent=30).model_dump(),
+                EventTypeTemplate(name="Engagement", default_advance_percent=40, profit_target_percent=28).model_dump(),
+            ]
+        )
+        
+        config_doc = default_config.model_dump()
+        config_doc['last_updated'] = config_doc['last_updated'].isoformat()
+        await db.tenant_configs.insert_one(config_doc)
+        config = config_doc
+    
+    return serialize_doc(config)
+
+@api_router.put("/superadmin/tenants/{tenant_id}/config")
+async def update_tenant_config(tenant_id: str, data: TenantConfigUpdate, current_user: dict = Depends(get_current_user)):
+    """Update tenant configuration - increments version for sync"""
+    require_super_admin(current_user)
+    
+    # Get current config
+    config = await db.tenant_configs.find_one({"tenant_id": tenant_id}, {"_id": 0})
+    if not config:
+        raise HTTPException(status_code=404, detail="Tenant config not found. Get config first to initialize.")
+    
+    # Store current version for rollback
+    current_version = {
+        "version": config.get('version', 1),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "data": {k: v for k, v in config.items() if k not in ['_id', 'id', 'tenant_id', 'previous_versions']}
+    }
+    
+    # Build update
+    update_fields = {"version": config.get('version', 1) + 1, "last_updated": datetime.now(timezone.utc).isoformat()}
+    
+    if data.feature_flags:
+        update_fields['feature_flags'] = {**config.get('feature_flags', {}), **data.feature_flags}
+    if data.workflow_rules:
+        update_fields['workflow_rules'] = {**config.get('workflow_rules', {}), **data.workflow_rules}
+    if data.permissions:
+        update_fields['permissions'] = {**config.get('permissions', {}), **data.permissions}
+    if data.event_templates is not None:
+        update_fields['event_templates'] = data.event_templates
+    if data.custom_fields is not None:
+        update_fields['custom_fields'] = data.custom_fields
+    if data.ui_visibility:
+        update_fields['ui_visibility'] = {**config.get('ui_visibility', {}), **data.ui_visibility}
+    if data.financial_controls:
+        update_fields['financial_controls'] = {**config.get('financial_controls', {}), **data.financial_controls}
+    if data.data_governance:
+        update_fields['data_governance'] = {**config.get('data_governance', {}), **data.data_governance}
+    
+    # Update with version history
+    await db.tenant_configs.update_one(
+        {"tenant_id": tenant_id},
+        {
+            "$set": update_fields,
+            "$push": {"previous_versions": {"$each": [current_version], "$slice": -10}}  # Keep last 10 versions
+        }
+    )
+    
+    updated = await db.tenant_configs.find_one({"tenant_id": tenant_id}, {"_id": 0})
+    return serialize_doc(updated)
+
+@api_router.put("/superadmin/tenants/{tenant_id}/config/feature-flags")
+async def update_feature_flags(tenant_id: str, flags: dict, current_user: dict = Depends(get_current_user)):
+    """Quick update for feature flags only"""
+    require_super_admin(current_user)
+    
+    config = await db.tenant_configs.find_one({"tenant_id": tenant_id}, {"_id": 0})
+    if not config:
+        raise HTTPException(status_code=404, detail="Tenant config not found")
+    
+    current_flags = config.get('feature_flags', {})
+    updated_flags = {**current_flags, **flags}
+    
+    await db.tenant_configs.update_one(
+        {"tenant_id": tenant_id},
+        {"$set": {
+            "feature_flags": updated_flags,
+            "version": config.get('version', 1) + 1,
+            "last_updated": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    
+    # Also sync to tenant's features_override for backward compatibility
+    await db.tenants.update_one(
+        {"id": tenant_id},
+        {"$set": {"features_override": updated_flags}}
+    )
+    
+    return {"message": "Feature flags updated", "flags": updated_flags}
+
+@api_router.put("/superadmin/tenants/{tenant_id}/config/workflow-rules")
+async def update_workflow_rules(tenant_id: str, rules: dict, current_user: dict = Depends(get_current_user)):
+    """Quick update for workflow rules only"""
+    require_super_admin(current_user)
+    
+    config = await db.tenant_configs.find_one({"tenant_id": tenant_id}, {"_id": 0})
+    if not config:
+        raise HTTPException(status_code=404, detail="Tenant config not found")
+    
+    current_rules = config.get('workflow_rules', {})
+    updated_rules = {**current_rules, **rules}
+    
+    await db.tenant_configs.update_one(
+        {"tenant_id": tenant_id},
+        {"$set": {
+            "workflow_rules": updated_rules,
+            "version": config.get('version', 1) + 1,
+            "last_updated": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    
+    return {"message": "Workflow rules updated", "rules": updated_rules}
+
+@api_router.put("/superadmin/tenants/{tenant_id}/config/permissions")
+async def update_permissions(tenant_id: str, permissions: dict, current_user: dict = Depends(get_current_user)):
+    """Update role permissions matrix"""
+    require_super_admin(current_user)
+    
+    config = await db.tenant_configs.find_one({"tenant_id": tenant_id}, {"_id": 0})
+    if not config:
+        raise HTTPException(status_code=404, detail="Tenant config not found")
+    
+    current_perms = config.get('permissions', {})
+    updated_perms = {**current_perms, **permissions}
+    
+    await db.tenant_configs.update_one(
+        {"tenant_id": tenant_id},
+        {"$set": {
+            "permissions": updated_perms,
+            "version": config.get('version', 1) + 1,
+            "last_updated": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    
+    return {"message": "Permissions updated", "permissions": updated_perms}
+
+@api_router.post("/superadmin/tenants/{tenant_id}/config/rollback")
+async def rollback_config(tenant_id: str, version: int, current_user: dict = Depends(get_current_user)):
+    """Rollback tenant config to a previous version"""
+    require_super_admin(current_user)
+    
+    config = await db.tenant_configs.find_one({"tenant_id": tenant_id}, {"_id": 0})
+    if not config:
+        raise HTTPException(status_code=404, detail="Tenant config not found")
+    
+    # Find the version to rollback to
+    previous_versions = config.get('previous_versions', [])
+    target_version = None
+    for pv in previous_versions:
+        if pv.get('version') == version:
+            target_version = pv
+            break
+    
+    if not target_version:
+        raise HTTPException(status_code=404, detail=f"Version {version} not found in history")
+    
+    # Restore the version
+    restore_data = target_version.get('data', {})
+    restore_data['version'] = config.get('version', 1) + 1
+    restore_data['last_updated'] = datetime.now(timezone.utc).isoformat()
+    
+    await db.tenant_configs.update_one(
+        {"tenant_id": tenant_id},
+        {"$set": restore_data}
+    )
+    
+    return {"message": f"Config rolled back to version {version}"}
+
+@api_router.post("/superadmin/tenants/{tenant_id}/reset-data")
+async def reset_tenant_data(tenant_id: str, confirm: bool = False, current_user: dict = Depends(get_current_user)):
+    """Reset all tenant data (DANGEROUS - requires confirmation)"""
+    require_super_admin(current_user)
+    
+    if not confirm:
+        raise HTTPException(status_code=400, detail="Must confirm=true to reset tenant data")
+    
+    tenant = await db.tenants.find_one({"id": tenant_id}, {"_id": 0})
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant not found")
+    
+    # Delete all tenant-specific data
+    collections_to_clear = ['bookings', 'party_plans', 'vendors', 'vendor_transactions', 
+                           'booking_vendors', 'payments', 'expenses', 'alerts', 'audit_logs']
+    
+    deleted_counts = {}
+    for collection in collections_to_clear:
+        result = await db[collection].delete_many({"tenant_id": tenant_id})
+        deleted_counts[collection] = result.deleted_count
+    
+    return {"message": "Tenant data reset", "deleted": deleted_counts}
+
+@api_router.get("/superadmin/tenants/{tenant_id}/config/versions")
+async def get_config_versions(tenant_id: str, current_user: dict = Depends(get_current_user)):
+    """Get config version history for rollback"""
+    require_super_admin(current_user)
+    
+    config = await db.tenant_configs.find_one({"tenant_id": tenant_id}, {"_id": 0})
+    if not config:
+        raise HTTPException(status_code=404, detail="Tenant config not found")
+    
+    versions = config.get('previous_versions', [])
+    current = {"version": config.get('version', 1), "timestamp": config.get('last_updated'), "current": True}
+    
+    return {"current": current, "history": versions}
+
+# ==================== TENANT CONFIG SYNC (for tenant apps) ====================
+
+@api_router.get("/config/sync")
+async def sync_tenant_config(current_user: dict = Depends(get_current_user)):
+    """Get tenant config for sync - called by tenant apps"""
+    tenant_id = current_user.get('tenant_id')
+    if not tenant_id:
+        raise HTTPException(status_code=400, detail="No tenant context")
+    
+    config = await db.tenant_configs.find_one({"tenant_id": tenant_id}, {"_id": 0})
+    if not config:
+        return {"version": 0, "message": "No config found"}
+    
+    return serialize_doc(config)
+
+@api_router.get("/config/check-version")
+async def check_config_version(current_version: int = 0, current_user: dict = Depends(get_current_user)):
+    """Check if tenant config has been updated"""
+    tenant_id = current_user.get('tenant_id')
+    if not tenant_id:
+        return {"needs_sync": False}
+    
+    config = await db.tenant_configs.find_one({"tenant_id": tenant_id}, {"_id": 0, "version": 1})
+    if not config:
+        return {"needs_sync": False, "current_version": 0}
+    
+    server_version = config.get('version', 1)
+    return {
+        "needs_sync": server_version > current_version,
+        "server_version": server_version,
+        "client_version": current_version
+    }
+
 # ==================== AUDIT LOGS ROUTES ====================
 @api_router.get("/audit-logs")
 async def get_audit_logs(
