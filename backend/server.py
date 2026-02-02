@@ -3176,6 +3176,211 @@ async def delete_tenant_user(tenant_id: str, user_id: str, current_user: dict = 
     await db.users.delete_one({"id": user_id})
     return {"message": "User deleted"}
 
+# ==================== AUDIT LOGS ROUTES ====================
+@api_router.get("/audit-logs")
+async def get_audit_logs(
+    entity_type: str = None,
+    entity_id: str = None,
+    action: str = None,
+    limit: int = 100,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get audit logs for tenant"""
+    require_permission(current_user, "audit:read")
+    
+    query = await get_tenant_filter(current_user)
+    if entity_type:
+        query["entity_type"] = entity_type
+    if entity_id:
+        query["entity_id"] = entity_id
+    if action:
+        query["action"] = action
+    
+    logs = await db.audit_logs.find(query, {"_id": 0}).sort("timestamp", -1).limit(limit).to_list(limit)
+    return logs
+
+# ==================== CSV EXPORT ROUTES ====================
+@api_router.get("/export/bookings")
+async def export_bookings_csv(
+    status: str = None,
+    start_date: str = None,
+    end_date: str = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """Export bookings as CSV"""
+    require_permission(current_user, "reports:read")
+    
+    query = await get_tenant_filter(current_user)
+    query["is_deleted"] = {"$ne": True}
+    
+    if status:
+        query["status"] = status
+    if start_date:
+        query["event_date"] = {"$gte": start_date}
+    if end_date:
+        if "event_date" in query:
+            query["event_date"]["$lte"] = end_date
+        else:
+            query["event_date"] = {"$lte": end_date}
+    
+    bookings = await db.bookings.find(query, {"_id": 0}).to_list(5000)
+    
+    # Build CSV
+    import io
+    import csv
+    
+    output = io.StringIO()
+    if bookings:
+        writer = csv.DictWriter(output, fieldnames=[
+            "booking_number", "event_date", "slot", "guest_count", "status",
+            "total_amount", "paid_amount", "created_at"
+        ])
+        writer.writeheader()
+        for b in bookings:
+            writer.writerow({
+                "booking_number": b.get("booking_number", ""),
+                "event_date": b.get("event_date", ""),
+                "slot": b.get("slot", ""),
+                "guest_count": b.get("guest_count", 0),
+                "status": b.get("status", ""),
+                "total_amount": b.get("total_amount", 0),
+                "paid_amount": b.get("paid_amount", 0),
+                "created_at": b.get("created_at", "")
+            })
+    
+    from fastapi.responses import StreamingResponse
+    output.seek(0)
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=bookings_export.csv"}
+    )
+
+@api_router.get("/export/customers")
+async def export_customers_csv(current_user: dict = Depends(get_current_user)):
+    """Export customers as CSV"""
+    require_permission(current_user, "reports:read")
+    
+    query = await get_tenant_filter(current_user)
+    query["is_deleted"] = {"$ne": True}
+    
+    customers = await db.customers.find(query, {"_id": 0}).to_list(5000)
+    
+    import io
+    import csv
+    
+    output = io.StringIO()
+    if customers:
+        writer = csv.DictWriter(output, fieldnames=["name", "email", "phone", "address", "created_at"])
+        writer.writeheader()
+        for c in customers:
+            writer.writerow({
+                "name": c.get("name", ""),
+                "email": c.get("email", ""),
+                "phone": c.get("phone", ""),
+                "address": c.get("address", ""),
+                "created_at": c.get("created_at", "")
+            })
+    
+    from fastapi.responses import StreamingResponse
+    output.seek(0)
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=customers_export.csv"}
+    )
+
+@api_router.get("/export/payments")
+async def export_payments_csv(
+    start_date: str = None,
+    end_date: str = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """Export payments as CSV"""
+    require_permission(current_user, "reports:read")
+    
+    query = await get_tenant_filter(current_user)
+    
+    if start_date:
+        query["payment_date"] = {"$gte": start_date}
+    if end_date:
+        if "payment_date" in query:
+            query["payment_date"]["$lte"] = end_date
+        else:
+            query["payment_date"] = {"$lte": end_date}
+    
+    payments = await db.payments.find(query, {"_id": 0}).to_list(5000)
+    
+    import io
+    import csv
+    
+    output = io.StringIO()
+    if payments:
+        writer = csv.DictWriter(output, fieldnames=[
+            "booking_id", "amount", "payment_mode", "payment_date", "notes"
+        ])
+        writer.writeheader()
+        for p in payments:
+            writer.writerow({
+                "booking_id": p.get("booking_id", ""),
+                "amount": p.get("amount", 0),
+                "payment_mode": p.get("payment_mode", ""),
+                "payment_date": p.get("payment_date", ""),
+                "notes": p.get("notes", "")
+            })
+    
+    from fastapi.responses import StreamingResponse
+    output.seek(0)
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=payments_export.csv"}
+    )
+
+# ==================== SOFT DELETE / RESTORE ROUTES ====================
+@api_router.post("/bookings/{booking_id}/restore")
+async def restore_booking(booking_id: str, current_user: dict = Depends(get_current_user)):
+    """Restore a soft-deleted booking"""
+    require_permission(current_user, "bookings:delete")
+    
+    tenant_filter = await get_tenant_filter(current_user)
+    query = {"id": booking_id, **tenant_filter}
+    
+    booking = await db.bookings.find_one(query, {"_id": 0})
+    if not booking:
+        raise HTTPException(status_code=404, detail="Booking not found")
+    
+    if not booking.get("is_deleted"):
+        return {"message": "Booking is not deleted"}
+    
+    await db.bookings.update_one(
+        {"id": booking_id},
+        {"$set": {"is_deleted": False, "deleted_at": None}}
+    )
+    
+    # Audit log
+    await create_audit_log(
+        tenant_id=current_user.get('tenant_id'),
+        user_id=current_user.get('user_id'),
+        user_email=current_user.get('email'),
+        action="restore",
+        entity_type="booking",
+        entity_id=booking_id
+    )
+    
+    return {"message": "Booking restored successfully"}
+
+@api_router.get("/bookings/deleted")
+async def get_deleted_bookings(current_user: dict = Depends(get_current_user)):
+    """Get soft-deleted bookings"""
+    require_permission(current_user, "bookings:read")
+    
+    tenant_filter = await get_tenant_filter(current_user)
+    query = {**tenant_filter, "is_deleted": True}
+    
+    bookings = await db.bookings.find(query, {"_id": 0}).to_list(500)
+    return bookings
+
 # ==================== SEED DATA ====================
 @api_router.post("/seed")
 async def seed_data():
