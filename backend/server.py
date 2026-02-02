@@ -4340,7 +4340,7 @@ async def get_country_configs(current_user: dict = Depends(get_current_user)):
     return COUNTRY_CONFIGS
 
 @api_router.get("/superadmin/tenants/{tenant_id}/config")
-async def get_tenant_config(tenant_id: str, current_user: dict = Depends(get_current_user)):
+async def get_tenant_config_api(tenant_id: str, current_user: dict = Depends(get_current_user)):
     """Get complete tenant configuration"""
     require_super_admin(current_user)
     
