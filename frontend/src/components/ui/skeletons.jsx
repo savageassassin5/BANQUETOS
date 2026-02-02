@@ -82,7 +82,7 @@ export function SkeletonEventCard({ className }) {
 // Table row skeleton (bookings, payments, vendors)
 export function SkeletonTableRow({ columns = 6, className }) {
   return (
-    <tr className={cn('border-b border-slate-100', className)}>
+    <tr className={cn('border-b border-purple-800/20', className)}>
       {Array.from({ length: columns }).map((_, i) => (
         <td key={i} className="py-4 px-4">
           <Skeleton className={cn(
@@ -102,16 +102,16 @@ export function SkeletonBookingTable({ rows = 5 }) {
   return (
     <div className="overflow-x-auto">
       <table className="w-full">
-        <thead className="bg-slate-50">
+        <thead className="bg-purple-900/30">
           <tr>
             {['Booking #', 'Customer', 'Hall', 'Event', 'Date', 'Amount', 'Status', 'Payment', 'Actions'].map((h, i) => (
-              <th key={i} className="text-left py-4 px-4 font-medium text-slate-400 text-sm">{h}</th>
+              <th key={i} className="text-left py-4 px-4 font-medium text-purple-300/60 text-sm">{h}</th>
             ))}
           </tr>
         </thead>
         <tbody>
           {Array.from({ length: rows }).map((_, i) => (
-            <tr key={i} className="border-b border-slate-100 last:border-0">
+            <tr key={i} className="border-b border-purple-800/20 last:border-0">
               <td className="py-4 px-4"><Skeleton className="h-4 w-20 font-mono" /></td>
               <td className="py-4 px-4">
                 <div className="space-y-1">
