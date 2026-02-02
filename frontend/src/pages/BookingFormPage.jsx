@@ -295,8 +295,37 @@ const BookingFormPage = () => {
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center h-64">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-fuchsia-600" />
+            <div className="max-w-5xl mx-auto space-y-6">
+                <div className="flex items-center gap-4">
+                    <Skeleton className="h-10 w-10 rounded-lg" />
+                    <div className="space-y-2">
+                        <Skeleton className="h-8 w-48" />
+                        <Skeleton className="h-4 w-64" />
+                    </div>
+                </div>
+                <div className="grid lg:grid-cols-3 gap-6">
+                    <div className="lg:col-span-2 space-y-6">
+                        <SkeletonBookingSection lines={4} />
+                        <SkeletonBookingSection lines={6} />
+                        <SkeletonBookingSection lines={8} />
+                    </div>
+                    <div>
+                        <Card className="sticky top-4">
+                            <CardHeader className="bg-gradient-to-r from-fuchsia-600 to-pink-500 text-white rounded-t-lg">
+                                <CardTitle>Cost Estimate</CardTitle>
+                            </CardHeader>
+                            <CardContent className="p-6 space-y-4">
+                                {Array.from({ length: 6 }).map((_, i) => (
+                                    <div key={i} className="flex justify-between">
+                                        <Skeleton className="h-4 w-24" />
+                                        <Skeleton className="h-4 w-20" />
+                                    </div>
+                                ))}
+                                <Skeleton className="h-12 w-full rounded-xl mt-4" />
+                            </CardContent>
+                        </Card>
+                    </div>
+                </div>
             </div>
         );
     }
