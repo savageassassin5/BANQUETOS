@@ -3038,9 +3038,10 @@ async def get_vendors(current_user: dict = Depends(get_current_user)):
 
 @api_router.post("/vendors", response_model=Vendor)
 async def create_vendor(vendor_data: VendorCreate, current_user: dict = Depends(get_current_user)):
-    if current_user['role'] not in ['admin', 'staff']:
+    if current_user['role'] not in ['admin', 'staff', 'tenant_admin']:
         raise HTTPException(status_code=403, detail="Not authorized")
     vendor = Vendor(**vendor_data.model_dump())
+    vendor.tenant_id = current_user.get('tenant_id')  # Set tenant_id for multi-tenant isolation
     vendor_doc = vendor.model_dump()
     vendor_doc['created_at'] = vendor_doc['created_at'].isoformat()
     await db.vendors.insert_one(vendor_doc)
