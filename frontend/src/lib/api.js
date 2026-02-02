@@ -146,12 +146,26 @@ export const seedAPI = {
 // Vendor API
 export const vendorAPI = {
     getAll: () => api.get('/vendors'),
+    getDirectory: () => api.get('/vendors/directory'),
     create: (data) => api.post('/vendors', data),
     update: (id, data) => api.put(`/vendors/${id}`, data),
     delete: (id) => api.delete(`/vendors/${id}`),
+    // Ledger
+    getLedger: (vendorId) => api.get(`/vendors/${vendorId}/ledger`),
+    createTransaction: (vendorId, data) => api.post(`/vendors/${vendorId}/transactions`, data),
+    // Legacy assignments
     getAssignments: (bookingId) => api.get('/vendor-assignments', { params: { booking_id: bookingId } }),
     createAssignment: (data) => api.post('/vendor-assignments', data),
     updatePayment: (assignmentId, amount) => api.put(`/vendor-assignments/${assignmentId}/payment`, null, { params: { amount } }),
+    // Booking vendors
+    getBookingVendors: (bookingId) => api.get(`/bookings/${bookingId}/vendors`),
+    assignToBooking: (bookingId, data) => api.post(`/bookings/${bookingId}/vendors`, data),
+    updateBookingVendor: (bookingId, assignmentId, data) => api.put(`/bookings/${bookingId}/vendors/${assignmentId}`, data),
+    removeFromBooking: (bookingId, assignmentId) => api.delete(`/bookings/${bookingId}/vendors/${assignmentId}`),
+    recordPayment: (bookingId, assignmentId, amount, paymentMethod, referenceId, note) => 
+        api.post(`/bookings/${bookingId}/vendors/${assignmentId}/pay`, null, { 
+            params: { amount, payment_method: paymentMethod, reference_id: referenceId, note } 
+        }),
 };
 
 // Expense API
