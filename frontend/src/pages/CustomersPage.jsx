@@ -26,6 +26,8 @@ const CustomersPage = () => {
         phone: '',
         address: ''
     });
+    const [saveStatus, setSaveStatus] = useSaveState();
+    const [saving, setSaving] = useState(false);
 
     useEffect(() => {
         loadData();
