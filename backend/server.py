@@ -3058,31 +3058,125 @@ async def delete_tenant_user(tenant_id: str, user_id: str, current_user: dict = 
 # ==================== SEED DATA ====================
 @api_router.post("/seed")
 async def seed_data():
-    """Seed initial data for testing"""
+    """Seed initial data for testing - now with multi-tenant support"""
     # Check if already seeded
-    existing = await db.halls.find_one({}, {"_id": 0})
+    existing = await db.tenants.find_one({}, {"_id": 0})
     if existing:
         return {"message": "Data already seeded"}
     
-    # Create admin user
-    admin = User(name="Admin", email="admin@mayurbanquet.com", phone="9876543210", role=UserRole.ADMIN)
-    admin_doc = admin.model_dump()
-    admin_doc['password'] = hash_password("admin123")
-    admin_doc['created_at'] = admin_doc['created_at'].isoformat()
+    # === PHASE H: Create Plans ===
+    basic_plan_id = str(uuid.uuid4())
+    pro_plan_id = str(uuid.uuid4())
+    enterprise_plan_id = str(uuid.uuid4())
+    
+    plans_data = [
+        {
+            "id": basic_plan_id,
+            "name": "Basic",
+            "description": "Essential features for small banquets",
+            "features": {
+                "bookings": True, "calendar": True, "halls": True, "menu": True,
+                "customers": True, "payments": True, "enquiries": True,
+                "reports": False, "vendors": False, "analytics": False,
+                "notifications": False, "expenses": False, "party_planning": False
+            },
+            "created_at": datetime.now(timezone.utc).isoformat()
+        },
+        {
+            "id": pro_plan_id,
+            "name": "Pro",
+            "description": "Advanced features for growing businesses",
+            "features": {
+                "bookings": True, "calendar": True, "halls": True, "menu": True,
+                "customers": True, "payments": True, "enquiries": True,
+                "reports": True, "vendors": True, "analytics": True,
+                "notifications": False, "expenses": True, "party_planning": False
+            },
+            "created_at": datetime.now(timezone.utc).isoformat()
+        },
+        {
+            "id": enterprise_plan_id,
+            "name": "Enterprise",
+            "description": "All features for large operations",
+            "features": {
+                "bookings": True, "calendar": True, "halls": True, "menu": True,
+                "customers": True, "payments": True, "enquiries": True,
+                "reports": True, "vendors": True, "analytics": True,
+                "notifications": True, "expenses": True, "party_planning": True
+            },
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+    ]
+    
+    for plan in plans_data:
+        await db.plans.insert_one(plan)
+    
+    # === Create Super Admin ===
+    super_admin_id = str(uuid.uuid4())
+    super_admin_doc = {
+        "id": super_admin_id,
+        "name": "Super Admin",
+        "email": "superadmin@banquetos.com",
+        "phone": "9999999999",
+        "role": "super_admin",
+        "tenant_id": None,
+        "status": "active",
+        "password": hash_password("superadmin123"),
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.users.insert_one(super_admin_doc)
+    
+    # === Create Demo Tenant: Tamasha Banquet ===
+    tenant_id = str(uuid.uuid4())
+    tenant_doc = {
+        "id": tenant_id,
+        "business_name": "Tamasha Banquet",
+        "country": "India",
+        "timezone": "Asia/Kolkata",
+        "currency": "INR",
+        "status": "active",
+        "plan_id": enterprise_plan_id,
+        "features_override": {},
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.tenants.insert_one(tenant_doc)
+    
+    # === Migrate existing users to tenant ===
+    # Create admin user for Tamasha Banquet
+    admin_id = str(uuid.uuid4())
+    admin_doc = {
+        "id": admin_id,
+        "name": "Admin",
+        "email": "admin@mayurbanquet.com",
+        "phone": "9876543210",
+        "role": "tenant_admin",
+        "tenant_id": tenant_id,
+        "status": "active",
+        "password": hash_password("admin123"),
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
     await db.users.insert_one(admin_doc)
     
-    # Create reception user
-    reception = User(name="Reception", email="reception@mayurbanquet.com", phone="9876543212", role=UserRole.RECEPTION)
-    reception_doc = reception.model_dump()
-    reception_doc['password'] = hash_password("reception123")
-    reception_doc['created_at'] = reception_doc['created_at'].isoformat()
+    # Create reception user for Tamasha Banquet
+    reception_id = str(uuid.uuid4())
+    reception_doc = {
+        "id": reception_id,
+        "name": "Reception",
+        "email": "reception@mayurbanquet.com",
+        "phone": "9876543212",
+        "role": "reception",
+        "tenant_id": tenant_id,
+        "status": "active",
+        "password": hash_password("reception123"),
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
     await db.users.insert_one(reception_doc)
     
-    # Create halls (price_per_day is now just for reference, not used in calculations)
+    # === Create halls with tenant_id ===
     halls_data = [
-        {"name": "Mayur Grand Hall", "capacity": 500, "price_per_day": 0, "description": "Our flagship hall perfect for grand weddings and large celebrations", "amenities": ["AC", "Stage", "Parking", "Kitchen", "Decoration Area"], "images": ["https://images.unsplash.com/photo-1587271407850-8d438ca9fdf2?w=800"]},
-        {"name": "Simran Banquet", "capacity": 300, "price_per_day": 0, "description": "Elegant hall ideal for medium-sized events and receptions", "amenities": ["AC", "Stage", "Parking", "Sound System"], "images": ["https://images.unsplash.com/photo-1568989357443-057c03fb10fc?w=800"]},
-        {"name": "Royal Suite", "capacity": 100, "price_per_day": 0, "description": "Intimate venue for small gatherings and corporate events", "amenities": ["AC", "Projector", "Wi-Fi", "Parking"], "images": ["https://images.unsplash.com/photo-1736155983520-a0f7d5949d39?w=800"]}
+        {"name": "Mayur Grand Hall", "capacity": 500, "price_per_day": 0, "description": "Our flagship hall perfect for grand weddings and large celebrations", "amenities": ["AC", "Stage", "Parking", "Kitchen", "Decoration Area"], "images": ["https://images.unsplash.com/photo-1587271407850-8d438ca9fdf2?w=800"], "tenant_id": tenant_id},
+        {"name": "Simran Banquet", "capacity": 300, "price_per_day": 0, "description": "Elegant hall ideal for medium-sized events and receptions", "amenities": ["AC", "Stage", "Parking", "Sound System"], "images": ["https://images.unsplash.com/photo-1568989357443-057c03fb10fc?w=800"], "tenant_id": tenant_id},
+        {"name": "Royal Suite", "capacity": 100, "price_per_day": 0, "description": "Intimate venue for small gatherings and corporate events", "amenities": ["AC", "Projector", "Wi-Fi", "Parking"], "images": ["https://images.unsplash.com/photo-1736155983520-a0f7d5949d39?w=800"], "tenant_id": tenant_id}
     ]
     
     for hall_data in halls_data:
