@@ -199,6 +199,7 @@ class Hall(BaseModel):
     images: List[str] = []
     color: str = "#6366f1"
     is_active: bool = True
+    tenant_id: Optional[str] = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class PricingType(str, Enum):
@@ -226,6 +227,7 @@ class MenuItem(BaseModel):
     description: str = ""
     is_addon: bool = False
     is_active: bool = True
+    tenant_id: Optional[str] = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class CustomerCreate(BaseModel):
