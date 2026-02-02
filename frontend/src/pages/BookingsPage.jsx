@@ -108,10 +108,46 @@ const BookingsPage = () => {
         );
     });
 
+    // Check if booking is today
+    const isToday = (dateStr) => {
+        const today = new Date().toISOString().split('T')[0];
+        return dateStr === today;
+    };
+
+    // Check if booking is in the past
+    const isPast = (dateStr) => {
+        const today = new Date().toISOString().split('T')[0];
+        return dateStr < today;
+    };
+
+    // Sort bookings: today first, then upcoming, then past
+    const sortedBookings = [...filteredBookings].sort((a, b) => {
+        const aIsToday = isToday(a.event_date);
+        const bIsToday = isToday(b.event_date);
+        if (aIsToday && !bIsToday) return -1;
+        if (!aIsToday && bIsToday) return 1;
+        return new Date(a.event_date) - new Date(b.event_date);
+    });
+
+    // Count today's bookings
+    const todayCount = filteredBookings.filter(b => isToday(b.event_date)).length;
+
     if (loading) {
         return (
-            <div className="flex items-center justify-center h-64">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-maroon" />
+            <div className="space-y-6" data-testid="bookings-page">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                    <div className="space-y-2">
+                        <div className="h-8 w-32 bg-slate-100 rounded animate-pulse" />
+                        <div className="h-4 w-48 bg-slate-100 rounded animate-pulse" />
+                    </div>
+                    <div className="h-10 w-36 bg-slate-100 rounded-xl animate-pulse" />
+                </div>
+                <SkeletonFilterBar />
+                <Card>
+                    <CardContent className="p-0">
+                        <SkeletonBookingTable rows={8} />
+                    </CardContent>
+                </Card>
             </div>
         );
     }
