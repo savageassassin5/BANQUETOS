@@ -162,12 +162,29 @@ const ReportsPage = () => {
                         </Card>
 
                         {loading ? (
-                            <div className="flex items-center justify-center h-64">
-                                <motion.div
-                                    animate={{ rotate: 360 }}
-                                    transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                                    className="w-12 h-12 rounded-full border-4 border-purple-200 border-t-purple-600"
-                                />
+                            <div className="space-y-6">
+                                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                    {Array.from({ length: 4 }).map((_, i) => (
+                                        <SkeletonReportCard key={i} />
+                                    ))}
+                                </div>
+                                <div className="grid lg:grid-cols-2 gap-6">
+                                    <Card className="bg-white border-0 shadow-lg rounded-2xl p-6">
+                                        <Skeleton className="h-5 w-36 mb-4" />
+                                        <Skeleton className="h-72 w-full rounded-xl" />
+                                    </Card>
+                                    <Card className="bg-white border-0 shadow-lg rounded-2xl p-6">
+                                        <Skeleton className="h-5 w-24 mb-4" />
+                                        <div className="space-y-3">
+                                            {Array.from({ length: 5 }).map((_, i) => (
+                                                <div key={i} className="flex justify-between py-2">
+                                                    <Skeleton className="h-4 w-32" />
+                                                    <Skeleton className="h-4 w-20" />
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </Card>
+                                </div>
                             </div>
                         ) : financialReport && (
                             <>
