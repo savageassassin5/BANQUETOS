@@ -29,6 +29,9 @@ const HallsPage = () => {
         images: []
     });
     const [amenityInput, setAmenityInput] = useState('');
+    const [saveStatus, setSaveStatus] = useSaveState();
+    const [saving, setSaving] = useState(false);
+    const [deleting, setDeleting] = useState(null);
 
     useEffect(() => {
         loadHalls();
