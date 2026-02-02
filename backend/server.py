@@ -3122,6 +3122,310 @@ async def update_vendor_payment(assignment_id: str, amount: float, current_user:
     )
     return {"message": "Payment updated"}
 
+# ==================== ELITE VENDOR LEDGER SYSTEM ====================
+
+@api_router.get("/vendors/{vendor_id}/ledger")
+async def get_vendor_ledger(vendor_id: str, current_user: dict = Depends(get_current_user)):
+    """Get complete transaction ledger for a vendor"""
+    tenant_filter = await get_tenant_filter(current_user)
+    
+    # Verify vendor exists
+    vendor = await db.vendors.find_one({"id": vendor_id, **tenant_filter}, {"_id": 0})
+    if not vendor:
+        raise HTTPException(status_code=404, detail="Vendor not found")
+    
+    # Get all transactions for this vendor
+    transactions = await db.vendor_transactions.find(
+        {"vendor_id": vendor_id, **tenant_filter}, 
+        {"_id": 0}
+    ).sort("transaction_date", -1).to_list(1000)
+    
+    # Calculate running balance
+    total_debits = sum(t['amount'] for t in transactions if t.get('transaction_type') == 'debit')
+    total_credits = sum(t['amount'] for t in transactions if t.get('transaction_type') == 'credit')
+    total_payments = sum(t['amount'] for t in transactions if t.get('transaction_type') == 'payment')
+    
+    # Balance: positive means you owe them (payable), negative means they owe you (receivable)
+    balance = total_debits - total_credits - total_payments
+    
+    # Enrich transactions with booking info
+    for txn in transactions:
+        if txn.get('booking_id'):
+            booking = await db.bookings.find_one({"id": txn['booking_id']}, {"_id": 0, "booking_number": 1, "event_date": 1})
+            txn['booking_number'] = booking.get('booking_number') if booking else None
+            txn['event_date'] = booking.get('event_date') if booking else None
+    
+    return {
+        "vendor": vendor,
+        "transactions": transactions,
+        "summary": {
+            "total_debits": total_debits,
+            "total_credits": total_credits,
+            "total_payments": total_payments,
+            "balance": balance,
+            "balance_type": "payable" if balance > 0 else "receivable" if balance < 0 else "settled"
+        }
+    }
+
+@api_router.post("/vendors/{vendor_id}/transactions")
+async def create_vendor_transaction(vendor_id: str, data: VendorTransactionCreate, current_user: dict = Depends(get_current_user)):
+    """Record a transaction (debit, credit, or payment) for a vendor"""
+    tenant_filter = await get_tenant_filter(current_user)
+    tenant_id = current_user.get('tenant_id')
+    
+    # Verify vendor exists
+    vendor = await db.vendors.find_one({"id": vendor_id, **tenant_filter}, {"_id": 0})
+    if not vendor:
+        raise HTTPException(status_code=404, detail="Vendor not found")
+    
+    # Create transaction
+    txn = VendorTransaction(
+        tenant_id=tenant_id,
+        vendor_id=vendor_id,
+        booking_id=data.booking_id,
+        transaction_type=data.transaction_type,
+        amount=data.amount,
+        payment_method=data.payment_method,
+        reference_id=data.reference_id,
+        transaction_date=data.transaction_date or datetime.now(timezone.utc).strftime('%Y-%m-%d'),
+        note=data.note,
+        created_by=current_user.get('user_id')
+    )
+    
+    txn_doc = txn.model_dump()
+    txn_doc['created_at'] = txn_doc['created_at'].isoformat()
+    await db.vendor_transactions.insert_one(txn_doc)
+    
+    # Update vendor balance summary
+    await recalculate_vendor_balance(vendor_id, tenant_filter)
+    
+    return serialize_doc(txn_doc)
+
+async def recalculate_vendor_balance(vendor_id: str, tenant_filter: dict):
+    """Recalculate and update vendor's balance summary"""
+    transactions = await db.vendor_transactions.find(
+        {"vendor_id": vendor_id, **tenant_filter}, 
+        {"_id": 0}
+    ).to_list(1000)
+    
+    total_debits = sum(t['amount'] for t in transactions if t.get('transaction_type') == 'debit')
+    total_credits = sum(t['amount'] for t in transactions if t.get('transaction_type') == 'credit')
+    total_payments = sum(t['amount'] for t in transactions if t.get('transaction_type') == 'payment')
+    
+    balance = total_debits - total_credits - total_payments
+    
+    await db.vendors.update_one(
+        {"id": vendor_id},
+        {"$set": {
+            "total_payable": total_debits,
+            "total_paid": total_payments,
+            "outstanding_balance": balance
+        }}
+    )
+
+# ==================== BOOKING VENDOR ASSIGNMENTS ====================
+
+@api_router.get("/bookings/{booking_id}/vendors")
+async def get_booking_vendors(booking_id: str, current_user: dict = Depends(get_current_user)):
+    """Get all vendors assigned to a booking"""
+    tenant_filter = await get_tenant_filter(current_user)
+    
+    # Verify booking exists
+    booking = await db.bookings.find_one({"id": booking_id, **tenant_filter}, {"_id": 0})
+    if not booking:
+        raise HTTPException(status_code=404, detail="Booking not found")
+    
+    # Get vendor assignments
+    assignments = await db.booking_vendors.find(
+        {"booking_id": booking_id, **tenant_filter}, 
+        {"_id": 0}
+    ).to_list(100)
+    
+    # Enrich with vendor info
+    for assignment in assignments:
+        vendor = await db.vendors.find_one({"id": assignment['vendor_id']}, {"_id": 0})
+        if vendor:
+            assignment['vendor_name'] = vendor.get('name')
+            assignment['vendor_type'] = vendor.get('vendor_type')
+            assignment['vendor_phone'] = vendor.get('phone')
+        
+        # Get payments made for this assignment
+        payments = await db.vendor_transactions.find(
+            {"vendor_id": assignment['vendor_id'], "booking_id": booking_id, "transaction_type": "payment", **tenant_filter},
+            {"_id": 0}
+        ).to_list(100)
+        assignment['amount_paid'] = sum(p['amount'] for p in payments)
+        assignment['balance_due'] = assignment['agreed_amount'] + assignment.get('tax', 0) - assignment['amount_paid']
+    
+    return assignments
+
+@api_router.post("/bookings/{booking_id}/vendors")
+async def assign_vendor_to_booking(booking_id: str, data: BookingVendorCreate, current_user: dict = Depends(get_current_user)):
+    """Assign a vendor to a booking"""
+    tenant_filter = await get_tenant_filter(current_user)
+    tenant_id = current_user.get('tenant_id')
+    
+    # Verify booking exists
+    booking = await db.bookings.find_one({"id": booking_id, **tenant_filter}, {"_id": 0})
+    if not booking:
+        raise HTTPException(status_code=404, detail="Booking not found")
+    
+    # Verify vendor exists
+    vendor = await db.vendors.find_one({"id": data.vendor_id, **tenant_filter}, {"_id": 0})
+    if not vendor:
+        raise HTTPException(status_code=404, detail="Vendor not found")
+    
+    # Create assignment
+    assignment = BookingVendor(
+        tenant_id=tenant_id,
+        booking_id=booking_id,
+        vendor_id=data.vendor_id,
+        category_snapshot=data.category_snapshot or vendor.get('vendor_type', ''),
+        agreed_amount=data.agreed_amount,
+        tax=data.tax,
+        advance_expected=data.advance_expected,
+        balance_due=data.agreed_amount + data.tax,
+        status=data.status,
+        notes=data.notes
+    )
+    
+    assignment_doc = assignment.model_dump()
+    assignment_doc['created_at'] = assignment_doc['created_at'].isoformat()
+    await db.booking_vendors.insert_one(assignment_doc)
+    
+    # Also create a debit transaction in the vendor ledger
+    if data.agreed_amount > 0:
+        debit_txn = VendorTransaction(
+            tenant_id=tenant_id,
+            vendor_id=data.vendor_id,
+            booking_id=booking_id,
+            transaction_type=TransactionType.DEBIT,
+            amount=data.agreed_amount + data.tax,
+            transaction_date=datetime.now(timezone.utc).strftime('%Y-%m-%d'),
+            note=f"Assigned to booking {booking.get('booking_number', booking_id)}",
+            created_by=current_user.get('user_id')
+        )
+        txn_doc = debit_txn.model_dump()
+        txn_doc['created_at'] = txn_doc['created_at'].isoformat()
+        await db.vendor_transactions.insert_one(txn_doc)
+        
+        # Recalculate vendor balance
+        await recalculate_vendor_balance(data.vendor_id, tenant_filter)
+    
+    # Update vendor event count
+    await db.vendors.update_one(
+        {"id": data.vendor_id},
+        {"$inc": {"total_events": 1}}
+    )
+    
+    return serialize_doc(assignment_doc)
+
+@api_router.put("/bookings/{booking_id}/vendors/{assignment_id}")
+async def update_booking_vendor(booking_id: str, assignment_id: str, data: BookingVendorCreate, current_user: dict = Depends(get_current_user)):
+    """Update a vendor assignment"""
+    tenant_filter = await get_tenant_filter(current_user)
+    
+    assignment = await db.booking_vendors.find_one({"id": assignment_id, "booking_id": booking_id, **tenant_filter}, {"_id": 0})
+    if not assignment:
+        raise HTTPException(status_code=404, detail="Assignment not found")
+    
+    update_data = {
+        "agreed_amount": data.agreed_amount,
+        "tax": data.tax,
+        "advance_expected": data.advance_expected,
+        "status": data.status,
+        "notes": data.notes
+    }
+    
+    await db.booking_vendors.update_one({"id": assignment_id}, {"$set": update_data})
+    
+    updated = await db.booking_vendors.find_one({"id": assignment_id}, {"_id": 0})
+    return serialize_doc(updated)
+
+@api_router.delete("/bookings/{booking_id}/vendors/{assignment_id}")
+async def remove_vendor_from_booking(booking_id: str, assignment_id: str, current_user: dict = Depends(get_current_user)):
+    """Remove a vendor from a booking"""
+    tenant_filter = await get_tenant_filter(current_user)
+    
+    assignment = await db.booking_vendors.find_one({"id": assignment_id, "booking_id": booking_id, **tenant_filter}, {"_id": 0})
+    if not assignment:
+        raise HTTPException(status_code=404, detail="Assignment not found")
+    
+    await db.booking_vendors.delete_one({"id": assignment_id})
+    
+    # Update vendor event count
+    await db.vendors.update_one(
+        {"id": assignment['vendor_id']},
+        {"$inc": {"total_events": -1}}
+    )
+    
+    return {"message": "Vendor removed from booking"}
+
+@api_router.post("/bookings/{booking_id}/vendors/{assignment_id}/pay")
+async def record_vendor_payment_for_booking(
+    booking_id: str, 
+    assignment_id: str, 
+    amount: float,
+    payment_method: str = "cash",
+    reference_id: str = "",
+    note: str = "",
+    current_user: dict = Depends(get_current_user)
+):
+    """Record a payment to a vendor for a specific booking"""
+    tenant_filter = await get_tenant_filter(current_user)
+    tenant_id = current_user.get('tenant_id')
+    
+    assignment = await db.booking_vendors.find_one({"id": assignment_id, "booking_id": booking_id, **tenant_filter}, {"_id": 0})
+    if not assignment:
+        raise HTTPException(status_code=404, detail="Assignment not found")
+    
+    # Create payment transaction
+    payment_txn = VendorTransaction(
+        tenant_id=tenant_id,
+        vendor_id=assignment['vendor_id'],
+        booking_id=booking_id,
+        transaction_type=TransactionType.PAYMENT,
+        amount=amount,
+        payment_method=payment_method,
+        reference_id=reference_id,
+        transaction_date=datetime.now(timezone.utc).strftime('%Y-%m-%d'),
+        note=note or f"Payment for booking {booking_id}",
+        created_by=current_user.get('user_id')
+    )
+    
+    txn_doc = payment_txn.model_dump()
+    txn_doc['created_at'] = txn_doc['created_at'].isoformat()
+    await db.vendor_transactions.insert_one(txn_doc)
+    
+    # Update assignment's amount_paid
+    new_paid = assignment.get('amount_paid', 0) + amount
+    new_balance = assignment['agreed_amount'] + assignment.get('tax', 0) - new_paid
+    new_status = "paid" if new_balance <= 0 else ("partial" if new_paid > 0 else "assigned")
+    
+    await db.booking_vendors.update_one(
+        {"id": assignment_id},
+        {"$set": {"amount_paid": new_paid, "balance_due": max(0, new_balance), "status": new_status}}
+    )
+    
+    # Recalculate vendor balance
+    await recalculate_vendor_balance(assignment['vendor_id'], tenant_filter)
+    
+    return {"message": "Payment recorded", "transaction_id": txn_doc['id']}
+
+@api_router.get("/vendors/directory")
+async def get_vendor_directory(current_user: dict = Depends(get_current_user)):
+    """Get vendor directory with balance summary for all vendors"""
+    tenant_filter = await get_tenant_filter(current_user)
+    
+    vendors = await db.vendors.find({"is_active": True, **tenant_filter}, {"_id": 0}).to_list(500)
+    
+    for vendor in vendors:
+        balance = vendor.get('outstanding_balance', 0)
+        vendor['balance_type'] = "payable" if balance > 0 else "receivable" if balance < 0 else "settled"
+        vendor['balance_display'] = abs(balance)
+    
+    return vendors
+
 # ==================== EXPENSE MANAGEMENT ====================
 @api_router.get("/expenses")
 async def get_expenses(booking_id: Optional[str] = None, start_date: Optional[str] = None, end_date: Optional[str] = None, current_user: dict = Depends(get_current_user)):
