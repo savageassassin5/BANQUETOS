@@ -235,6 +235,7 @@ const BookingFormPage = () => {
         }
 
         setSaving(true);
+        setSaveStatus('saving');
         try {
             const payload = {
                 ...form,
@@ -246,13 +247,16 @@ const BookingFormPage = () => {
 
             if (isEditing) {
                 await bookingsAPI.update(id, payload);
+                setSaveStatus('saved');
                 toast.success('Booking updated');
             } else {
                 await bookingsAPI.create(payload);
+                setSaveStatus('saved');
                 toast.success('Booking created');
             }
             navigate('/dashboard/bookings');
         } catch (error) {
+            setSaveStatus('error');
             toast.error(error.response?.data?.detail || 'Failed to save booking');
         } finally {
             setSaving(false);
