@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Edit, Trash2, Phone, Mail, Search, Truck, DollarSign, Sparkles } from 'lucide-react';
+import { Plus, Edit, Trash2, Phone, Mail, Search, Truck, DollarSign, Sparkles, Loader2, AlertTriangle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Badge } from '../components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from '../components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../components/ui/alert-dialog';
 import { StatusBadge } from '../components/ui/status-badge';
 import { SaveFeedback, useSaveState } from '../components/ui/save-feedback';
 import { SkeletonVendorCard, SkeletonFilterBar } from '../components/ui/skeletons';
