@@ -58,6 +58,9 @@ const BookingFormPage = () => {
 
     const [newCustomer, setNewCustomer] = useState({ name: '', email: '', phone: '', address: '' });
     const [showNewCustomerForm, setShowNewCustomerForm] = useState(false);
+    const [saveStatus, setSaveStatus] = useSaveState();
+    const [hasPartyPlan, setHasPartyPlan] = useState(false);
+    const [lastUpdated, setLastUpdated] = useState(null);
 
     useEffect(() => {
         loadData();
