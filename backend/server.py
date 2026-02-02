@@ -592,11 +592,12 @@ def hash_password(password: str) -> str:
 def verify_password(password: str, hashed: str) -> bool:
     return bcrypt.checkpw(password.encode('utf-8'), hashed.encode('utf-8'))
 
-def create_token(user_id: str, email: str, role: str) -> str:
+def create_token(user_id: str, email: str, role: str, tenant_id: Optional[str] = None) -> str:
     payload = {
         "user_id": user_id,
         "email": email,
         "role": role,
+        "tenant_id": tenant_id,
         "exp": datetime.now(timezone.utc) + timedelta(hours=JWT_EXPIRATION_HOURS)
     }
     return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
@@ -610,11 +611,76 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
     except jwt.InvalidTokenError:
         raise HTTPException(status_code=401, detail="Invalid token")
 
+def require_super_admin(current_user: dict):
+    """Check if user is super admin"""
+    if current_user.get('role') != 'super_admin':
+        raise HTTPException(status_code=403, detail="Super admin access required")
+    return True
+
 def require_admin(current_user: dict):
-    """Check if user is admin"""
-    if current_user.get('role') != 'admin':
+    """Check if user is admin or tenant_admin"""
+    if current_user.get('role') not in ['admin', 'tenant_admin', 'super_admin']:
         raise HTTPException(status_code=403, detail="Admin access required")
     return True
+
+async def get_effective_features(tenant_id: Optional[str]) -> dict:
+    """Get effective features for a tenant (plan features + overrides)"""
+    if not tenant_id:
+        # Super admin has all features
+        return {
+            "bookings": True, "calendar": True, "halls": True, "menu": True,
+            "customers": True, "payments": True, "enquiries": True, "reports": True,
+            "vendors": True, "analytics": True, "notifications": True, "expenses": True,
+            "party_planning": True
+        }
+    
+    tenant = await db.tenants.find_one({"id": tenant_id}, {"_id": 0})
+    if not tenant:
+        return {}
+    
+    # Start with default features
+    features = {
+        "bookings": True, "calendar": True, "halls": True, "menu": True,
+        "customers": True, "payments": True, "enquiries": True, "reports": False,
+        "vendors": False, "analytics": False, "notifications": False, "expenses": False,
+        "party_planning": False
+    }
+    
+    # Apply plan features if plan exists
+    if tenant.get('plan_id'):
+        plan = await db.plans.find_one({"id": tenant['plan_id']}, {"_id": 0})
+        if plan and plan.get('features'):
+            features.update(plan['features'])
+    
+    # Apply tenant-specific overrides
+    if tenant.get('features_override'):
+        features.update(tenant['features_override'])
+    
+    return features
+
+async def check_feature_access(current_user: dict, feature: str):
+    """Check if user has access to a feature"""
+    if current_user.get('role') == 'super_admin':
+        return True
+    
+    tenant_id = current_user.get('tenant_id')
+    if not tenant_id:
+        raise HTTPException(status_code=403, detail="No tenant associated")
+    
+    features = await get_effective_features(tenant_id)
+    if not features.get(feature, False):
+        raise HTTPException(status_code=403, detail=f"Feature '{feature}' not enabled for your plan")
+    
+    return True
+
+async def get_tenant_filter(current_user: dict) -> dict:
+    """Get MongoDB filter for tenant isolation"""
+    if current_user.get('role') == 'super_admin':
+        return {}  # Super admin can see all
+    tenant_id = current_user.get('tenant_id')
+    if not tenant_id:
+        raise HTTPException(status_code=403, detail="No tenant associated")
+    return {"tenant_id": tenant_id}
 
 def get_slot_times(slot: SlotType) -> tuple:
     """Get start and end times for a slot"""
