@@ -1,11 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Plus, Minus, Trash2, CreditCard, Wallet, IndianRupee } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ArrowLeft, Plus, Minus, Trash2, CreditCard, Wallet, IndianRupee, AlertTriangle, Clock, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Textarea } from '../components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
+import { StatusBadge } from '../components/ui/status-badge';
+import { SaveFeedback, useSaveState } from '../components/ui/save-feedback';
+import { IntelligenceCue } from '../components/ui/intelligence-cue';
+import { SkeletonBookingSection, Skeleton } from '../components/ui/skeletons';
 import { bookingsAPI, customersAPI, hallsAPI, menuAPI, vendorAPI } from '../lib/api';
 import { eventTypes, formatCurrency, bookingStatuses } from '../lib/utils';
 import { toast } from 'sonner';
