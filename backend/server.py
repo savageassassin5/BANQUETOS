@@ -1902,38 +1902,303 @@ async def create_party_plan(plan_data: PartyPlanCreate, current_user: dict = Dep
 
 @api_router.put("/party-plans/{booking_id}")
 async def update_party_plan(booking_id: str, plan_data: PartyPlanCreate, current_user: dict = Depends(get_current_user)):
-    if current_user.get('role') != 'admin':
-        raise HTTPException(status_code=403, detail="Admin access required")
+    tenant_filter = await get_tenant_filter(current_user)
+    tenant_id = current_user.get('tenant_id')
     
-    existing = await db.party_plans.find_one({"booking_id": booking_id}, {"_id": 0})
+    # Verify plan exists
+    existing = await db.party_plans.find_one({"booking_id": booking_id, **tenant_filter}, {"_id": 0})
     if not existing:
         raise HTTPException(status_code=404, detail="Party plan not found")
     
-    # Calculate total staff charges
-    total_staff_charges = sum(s.get('charge', 0) for s in plan_data.staff_assignments)
+    # Verify booking exists
+    booking = await db.bookings.find_one({"id": booking_id, **tenant_filter}, {"_id": 0})
+    if not booking:
+        raise HTTPException(status_code=404, detail="Booking not found")
     
+    # Check if booking is cancelled - make plan read-only
+    if booking.get('status') == 'cancelled':
+        raise HTTPException(status_code=400, detail="Cannot update plan for cancelled booking")
+    
+    # Calculate total staff charges
+    total_staff_charges = 0
+    for staff in plan_data.staff_assignments:
+        count = staff.get('count', 1)
+        wage = float(staff.get('wage', 0))
+        total_staff_charges += count * wage
+    
+    # Update booking snapshot if acknowledging changes
+    booking_snapshot = existing.get('booking_snapshot', {})
+    change_warnings = []
+    booking_changed = False
+    
+    # Check if booking details changed
+    if booking_snapshot:
+        if booking_snapshot.get('event_date') != booking.get('event_date'):
+            change_warnings.append(f"Event date changed")
+            booking_changed = True
+        if booking_snapshot.get('slot') != booking.get('slot'):
+            change_warnings.append(f"Slot changed")
+            booking_changed = True
+        if booking_snapshot.get('guest_count') != booking.get('guest_count'):
+            change_warnings.append(f"Guest count changed")
+            booking_changed = True
+        if booking_snapshot.get('hall_id') != booking.get('hall_id'):
+            change_warnings.append(f"Hall/Venue changed")
+            booking_changed = True
+    
+    # Add activity log entry
+    activity_log = existing.get('activity_log', [])
+    activity_log.append({
+        "id": str(uuid.uuid4()),
+        "action": "Plan updated",
+        "user": current_user.get('email'),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "details": {"staff_charges": total_staff_charges}
+    })
+    
+    # Prepare update data
     update_data = {
-        "dj_vendor_id": plan_data.dj_vendor_id,
-        "decor_vendor_id": plan_data.decor_vendor_id,
-        "catering_vendor_id": plan_data.catering_vendor_id,
+        "dj_vendor_id": plan_data.dj_vendor_id if plan_data.dj_vendor_id and plan_data.dj_vendor_id != 'none' else None,
+        "decor_vendor_id": plan_data.decor_vendor_id if plan_data.decor_vendor_id and plan_data.decor_vendor_id != 'none' else None,
+        "catering_vendor_id": plan_data.catering_vendor_id if plan_data.catering_vendor_id and plan_data.catering_vendor_id != 'none' else None,
         "custom_vendors": plan_data.custom_vendors,
         "staff_assignments": plan_data.staff_assignments,
         "total_staff_charges": total_staff_charges,
+        "timeline_tasks": plan_data.timeline_tasks if hasattr(plan_data, 'timeline_tasks') and plan_data.timeline_tasks else existing.get('timeline_tasks', []),
+        "inventory": plan_data.inventory if hasattr(plan_data, 'inventory') else existing.get('inventory', {}),
+        "setup_notes": plan_data.setup_notes if hasattr(plan_data, 'setup_notes') else existing.get('setup_notes', ''),
+        "menu_execution": plan_data.menu_execution if hasattr(plan_data, 'menu_execution') else existing.get('menu_execution', {}),
+        "documents": plan_data.documents if hasattr(plan_data, 'documents') else existing.get('documents', []),
+        "activity_log": activity_log,
         "notes": plan_data.notes,
+        "booking_changed": booking_changed,
+        "change_warnings": change_warnings,
         "updated_at": datetime.now(timezone.utc).isoformat()
     }
     
+    # Get payments for readiness calculation
+    payments = await db.payments.find({"booking_id": booking_id}, {"_id": 0}).to_list(100)
+    
+    # Calculate readiness
+    merged_plan = {**existing, **update_data}
+    score, breakdown = calculate_readiness_score(merged_plan, booking, payments)
+    update_data['readiness_score'] = score
+    update_data['readiness_breakdown'] = breakdown
+    
     await db.party_plans.update_one({"booking_id": booking_id}, {"$set": update_data})
     
-    # Link vendors to booking
-    all_vendors = [plan_data.dj_vendor_id, plan_data.decor_vendor_id, plan_data.catering_vendor_id] + plan_data.custom_vendors
-    linked_vendors = [v for v in all_vendors if v]
-    await db.bookings.update_one(
-        {"id": booking_id},
-        {"$set": {"linked_vendors": linked_vendors}}
+    # Update or create staff expense
+    await db.party_expenses.delete_many({"booking_id": booking_id, "category": "Staff", "notes": {"$regex": "party planning"}})
+    
+    if total_staff_charges > 0:
+        expense_doc = PartyExpense(
+            booking_id=booking_id,
+            category="Staff",
+            description="Staff wages from party planning",
+            amount=total_staff_charges,
+            notes="Auto-generated from party planning"
+        ).model_dump()
+        expense_doc['tenant_id'] = tenant_id
+        expense_doc['created_at'] = expense_doc['created_at'].isoformat()
+        await db.party_expenses.insert_one(expense_doc)
+    
+    # Return updated plan
+    updated_plan = await db.party_plans.find_one({"booking_id": booking_id}, {"_id": 0})
+    return updated_plan
+
+# New API: Acknowledge booking changes
+@api_router.post("/party-plans/{booking_id}/acknowledge-changes")
+async def acknowledge_booking_changes(booking_id: str, current_user: dict = Depends(get_current_user)):
+    """Acknowledge booking changes and update snapshot"""
+    tenant_filter = await get_tenant_filter(current_user)
+    
+    # Verify plan exists
+    plan = await db.party_plans.find_one({"booking_id": booking_id, **tenant_filter}, {"_id": 0})
+    if not plan:
+        raise HTTPException(status_code=404, detail="Party plan not found")
+    
+    # Get current booking
+    booking = await db.bookings.find_one({"id": booking_id, **tenant_filter}, {"_id": 0})
+    if not booking:
+        raise HTTPException(status_code=404, detail="Booking not found")
+    
+    # Update snapshot to current booking state
+    new_snapshot = {
+        "event_date": booking.get('event_date'),
+        "slot": booking.get('slot'),
+        "guest_count": booking.get('guest_count'),
+        "hall_id": booking.get('hall_id'),
+        "event_type": booking.get('event_type'),
+        "total_amount": booking.get('total_amount')
+    }
+    
+    # Add activity log
+    activity_log = plan.get('activity_log', [])
+    activity_log.append({
+        "id": str(uuid.uuid4()),
+        "action": "Acknowledged booking changes",
+        "user": current_user.get('email'),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "details": {"old_snapshot": plan.get('booking_snapshot'), "new_snapshot": new_snapshot}
+    })
+    
+    await db.party_plans.update_one(
+        {"booking_id": booking_id},
+        {"$set": {
+            "booking_snapshot": new_snapshot,
+            "booking_changed": False,
+            "change_warnings": [],
+            "activity_log": activity_log,
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }}
     )
     
-    return {"message": "Party plan updated"}
+    return {"message": "Changes acknowledged", "new_snapshot": new_snapshot}
+
+# New API: Get staff suggestions
+@api_router.get("/party-plans/suggest-staff/{booking_id}")
+async def suggest_staff_for_booking(booking_id: str, current_user: dict = Depends(get_current_user)):
+    """Get smart staff suggestions based on booking parameters"""
+    tenant_filter = await get_tenant_filter(current_user)
+    
+    booking = await db.bookings.find_one({"id": booking_id, **tenant_filter}, {"_id": 0})
+    if not booking:
+        raise HTTPException(status_code=404, detail="Booking not found")
+    
+    suggestions = suggest_staff_requirements(
+        booking.get('event_type', 'custom'),
+        booking.get('guest_count', 100)
+    )
+    
+    return {"suggestions": suggestions}
+
+# New API: Generate/regenerate timeline
+@api_router.post("/party-plans/{booking_id}/generate-timeline")
+async def generate_timeline_for_plan(booking_id: str, current_user: dict = Depends(get_current_user)):
+    """Generate or regenerate smart timeline for a booking"""
+    tenant_filter = await get_tenant_filter(current_user)
+    
+    booking = await db.bookings.find_one({"id": booking_id, **tenant_filter}, {"_id": 0})
+    if not booking:
+        raise HTTPException(status_code=404, detail="Booking not found")
+    
+    timeline = generate_default_timeline(
+        booking.get('event_type', 'custom'),
+        booking.get('slot', 'day'),
+        booking.get('guest_count', 100)
+    )
+    
+    # Update plan if exists
+    plan = await db.party_plans.find_one({"booking_id": booking_id, **tenant_filter}, {"_id": 0})
+    if plan:
+        activity_log = plan.get('activity_log', [])
+        activity_log.append({
+            "id": str(uuid.uuid4()),
+            "action": "Timeline regenerated",
+            "user": current_user.get('email'),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "details": {}
+        })
+        
+        await db.party_plans.update_one(
+            {"booking_id": booking_id},
+            {"$set": {
+                "timeline_tasks": timeline,
+                "activity_log": activity_log,
+                "updated_at": datetime.now(timezone.utc).isoformat()
+            }}
+        )
+    
+    return {"timeline": timeline}
+
+# New API: Update timeline task status
+@api_router.put("/party-plans/{booking_id}/timeline/{task_id}")
+async def update_timeline_task(booking_id: str, task_id: str, status: str, current_user: dict = Depends(get_current_user)):
+    """Update a timeline task status"""
+    tenant_filter = await get_tenant_filter(current_user)
+    
+    plan = await db.party_plans.find_one({"booking_id": booking_id, **tenant_filter}, {"_id": 0})
+    if not plan:
+        raise HTTPException(status_code=404, detail="Party plan not found")
+    
+    timeline_tasks = plan.get('timeline_tasks', [])
+    updated = False
+    for task in timeline_tasks:
+        if task.get('id') == task_id:
+            task['status'] = status
+            updated = True
+            break
+    
+    if not updated:
+        raise HTTPException(status_code=404, detail="Task not found")
+    
+    # Recalculate readiness
+    booking = await db.bookings.find_one({"id": booking_id, **tenant_filter}, {"_id": 0})
+    payments = await db.payments.find({"booking_id": booking_id}, {"_id": 0}).to_list(100)
+    
+    merged_plan = {**plan, "timeline_tasks": timeline_tasks}
+    score, breakdown = calculate_readiness_score(merged_plan, booking, payments)
+    
+    await db.party_plans.update_one(
+        {"booking_id": booking_id},
+        {"$set": {
+            "timeline_tasks": timeline_tasks,
+            "readiness_score": score,
+            "readiness_breakdown": breakdown,
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    
+    return {"message": "Task updated", "readiness_score": score}
+
+# New API: Calculate profit snapshot
+@api_router.get("/party-plans/{booking_id}/profit-snapshot")
+async def get_profit_snapshot(booking_id: str, current_user: dict = Depends(get_current_user)):
+    """Get profit protection snapshot for a booking"""
+    tenant_filter = await get_tenant_filter(current_user)
+    
+    booking = await db.bookings.find_one({"id": booking_id, **tenant_filter}, {"_id": 0})
+    if not booking:
+        raise HTTPException(status_code=404, detail="Booking not found")
+    
+    # Get payments
+    payments = await db.payments.find({"booking_id": booking_id}, {"_id": 0}).to_list(100)
+    total_paid = sum(p.get('amount', 0) for p in payments)
+    
+    # Get party expenses
+    expenses = await db.party_expenses.find({"booking_id": booking_id}, {"_id": 0}).to_list(100)
+    total_expenses = sum(e.get('amount', 0) for e in expenses)
+    
+    # Get vendor costs from party plan
+    plan = await db.party_plans.find_one({"booking_id": booking_id, **tenant_filter}, {"_id": 0})
+    staff_costs = plan.get('total_staff_charges', 0) if plan else 0
+    
+    # Calculate
+    booking_revenue = booking.get('total_amount', 0)
+    pending_amount = booking_revenue - total_paid
+    estimated_profit = booking_revenue - total_expenses
+    profit_margin = (estimated_profit / booking_revenue * 100) if booking_revenue > 0 else 0
+    
+    # Generate alerts
+    alerts = []
+    if profit_margin < 20:
+        alerts.append({"type": "warning", "message": f"Low profit margin: {profit_margin:.1f}%"})
+    if pending_amount > booking_revenue * 0.5:
+        alerts.append({"type": "warning", "message": f"High pending amount: ₹{pending_amount:,.0f}"})
+    if booking.get('discount_value', 0) > 0:
+        alerts.append({"type": "info", "message": f"Discount applied: {booking.get('discount_type')} {booking.get('discount_value')}"})
+    
+    return {
+        "booking_revenue": booking_revenue,
+        "payments_received": total_paid,
+        "pending_amount": pending_amount,
+        "total_expenses": total_expenses,
+        "staff_costs": staff_costs,
+        "estimated_profit": estimated_profit,
+        "profit_margin": round(profit_margin, 1),
+        "alerts": alerts,
+        "expense_breakdown": [{"category": e.get('category'), "amount": e.get('amount')} for e in expenses]
+    }
 
 # ==================== CONFIRMED BOOKINGS FOR PARTY PLANNING ====================
 @api_router.get("/confirmed-bookings")
