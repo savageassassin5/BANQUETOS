@@ -169,8 +169,27 @@ const CalendarPage = () => {
                 </CardHeader>
                 <CardContent className="p-0">
                     {loading ? (
-                        <div className="flex items-center justify-center h-96">
-                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-fuchsia-600" />
+                        <div className="p-4">
+                            {/* Week days header skeleton */}
+                            <div className="grid grid-cols-7 border-b mb-2">
+                                {Array.from({ length: 7 }).map((_, i) => (
+                                    <div key={i} className="p-3 text-center">
+                                        <Skeleton className="h-4 w-8 mx-auto" />
+                                    </div>
+                                ))}
+                            </div>
+                            {/* Calendar grid skeleton */}
+                            <div className="grid grid-cols-7 gap-px bg-slate-100">
+                                {Array.from({ length: 35 }).map((_, i) => (
+                                    <div key={i} className="min-h-[120px] bg-white p-2">
+                                        <Skeleton className="h-5 w-5 mb-2" />
+                                        <div className="space-y-1">
+                                            {Math.random() > 0.6 && <Skeleton className="h-6 w-full rounded" />}
+                                            {Math.random() > 0.7 && <Skeleton className="h-6 w-full rounded" />}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
                     ) : (
                         <div className="overflow-x-auto">
