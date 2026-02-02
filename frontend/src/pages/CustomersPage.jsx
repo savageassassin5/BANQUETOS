@@ -66,6 +66,8 @@ const CustomersPage = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setSaving(true);
+        setSaveStatus('saving');
         try {
             if (editingCustomer) {
                 await customersAPI.update(editingCustomer.id, form);
@@ -74,11 +76,15 @@ const CustomersPage = () => {
                 await customersAPI.create(form);
                 toast.success('Customer created');
             }
+            setSaveStatus('saved');
             loadData();
             setDialogOpen(false);
             resetForm();
         } catch (error) {
+            setSaveStatus('error');
             toast.error('Failed to save customer');
+        } finally {
+            setSaving(false);
         }
     };
 
