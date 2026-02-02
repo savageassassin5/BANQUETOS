@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
     Building2, Plus, Search, Filter, MoreVertical, Edit, Trash2,
-    CheckCircle, XCircle, Clock, Users, ArrowUpRight
+    CheckCircle, XCircle, Clock, Users, ArrowUpRight, Loader2
 } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
+import { StatusBadge } from '../../components/ui/status-badge';
+import { Skeleton } from '../../components/ui/skeletons';
 import { superAdminAPI } from '../../lib/api';
 import { toast } from 'sonner';
 import {
