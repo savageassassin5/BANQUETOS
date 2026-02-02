@@ -3351,6 +3351,10 @@ async def update_vendor_payment(assignment_id: str, amount: float, current_user:
 @api_router.get("/vendors/{vendor_id}/ledger")
 async def get_vendor_ledger(vendor_id: str, current_user: dict = Depends(get_current_user)):
     """Get complete transaction ledger for a vendor"""
+    # Enforce feature flag
+    await check_feature_access(current_user, 'vendor_ledger')
+    await check_permission(current_user, 'view_vendor_ledger')
+    
     tenant_filter = await get_tenant_filter(current_user)
     
     # Verify vendor exists
