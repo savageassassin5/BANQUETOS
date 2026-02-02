@@ -420,7 +420,7 @@ const DashboardPage = () => {
                                         <tr>
                                             <td colSpan="8" className="py-12 text-center">
                                                 <CalendarDays className="h-12 w-12 text-slate-300 mx-auto mb-3" />
-                                                <p className="text-slate-400">No bookings yet. Click "Load Sample Data" to add demo bookings.</p>
+                                                <p className="text-slate-400">No bookings yet. Click &quot;Load Sample Data&quot; to add demo bookings.</p>
                                             </td>
                                         </tr>
                                     )}
