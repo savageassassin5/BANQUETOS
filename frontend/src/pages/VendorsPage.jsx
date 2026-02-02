@@ -189,7 +189,7 @@ const VendorsPage = () => {
             data-testid="vendors-page"
         >
             {/* Header */}
-            <motion.div variants={itemVariants} className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <motion.div variants={itemVariants} initial="hidden" animate="visible" className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                 <div>
                     <div className="flex items-center gap-3 mb-2">
                         <motion.div
