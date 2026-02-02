@@ -773,15 +773,36 @@ async def register(user_data: UserCreate):
         name=user_data.name,
         email=user_data.email,
         phone=user_data.phone,
-        role=user_data.role
+        role=user_data.role,
+        tenant_id=user_data.tenant_id
     )
     user_doc = user.model_dump()
     user_doc['password'] = hash_password(user_data.password)
     user_doc['created_at'] = user_doc['created_at'].isoformat()
     
     await db.users.insert_one(user_doc)
-    token = create_token(user.id, user.email, user.role.value)
-    return TokenResponse(token=token, user=user)
+    
+    # Get effective features
+    effective_features = await get_effective_features(user.tenant_id)
+    
+    # Get tenant status
+    tenant_status = None
+    if user.tenant_id:
+        tenant = await db.tenants.find_one({"id": user.tenant_id}, {"_id": 0})
+        tenant_status = tenant.get('status') if tenant else None
+    
+    token = create_token(user.id, user.email, user.role.value, user.tenant_id)
+    user_response = UserResponse(
+        id=user.id,
+        name=user.name,
+        email=user.email,
+        phone=user.phone,
+        role=user.role.value,
+        tenant_id=user.tenant_id,
+        tenant_status=tenant_status,
+        effective_features=effective_features
+    )
+    return TokenResponse(token=token, user=user_response)
 
 @api_router.post("/auth/login", response_model=TokenResponse)
 async def login(credentials: UserLogin):
@@ -789,16 +810,63 @@ async def login(credentials: UserLogin):
     if not user_doc or not verify_password(credentials.password, user_doc['password']):
         raise HTTPException(status_code=401, detail="Invalid credentials")
     
-    user = User(**{k: v for k, v in user_doc.items() if k != 'password'})
-    token = create_token(user.id, user.email, user.role.value)
-    return TokenResponse(token=token, user=user)
+    # Check if user is disabled
+    if user_doc.get('status') == 'disabled':
+        raise HTTPException(status_code=403, detail="Account is disabled")
+    
+    # Get effective features
+    tenant_id = user_doc.get('tenant_id')
+    effective_features = await get_effective_features(tenant_id)
+    
+    # Get tenant status
+    tenant_status = None
+    if tenant_id:
+        tenant = await db.tenants.find_one({"id": tenant_id}, {"_id": 0})
+        if tenant:
+            tenant_status = tenant.get('status')
+            # Check if tenant is suspended
+            if tenant_status == 'suspended' and user_doc.get('role') != 'super_admin':
+                raise HTTPException(status_code=403, detail="Your organization's account has been suspended")
+    
+    token = create_token(user_doc['id'], user_doc['email'], user_doc['role'], tenant_id)
+    user_response = UserResponse(
+        id=user_doc['id'],
+        name=user_doc['name'],
+        email=user_doc['email'],
+        phone=user_doc['phone'],
+        role=user_doc['role'],
+        tenant_id=tenant_id,
+        tenant_status=tenant_status,
+        effective_features=effective_features
+    )
+    return TokenResponse(token=token, user=user_response)
 
-@api_router.get("/auth/me", response_model=User)
+@api_router.get("/auth/me")
 async def get_me(current_user: dict = Depends(get_current_user)):
     user_doc = await db.users.find_one({"id": current_user['user_id']}, {"_id": 0, "password": 0})
     if not user_doc:
         raise HTTPException(status_code=404, detail="User not found")
-    return User(**user_doc)
+    
+    # Get effective features
+    tenant_id = user_doc.get('tenant_id')
+    effective_features = await get_effective_features(tenant_id)
+    
+    # Get tenant status
+    tenant_status = None
+    if tenant_id:
+        tenant = await db.tenants.find_one({"id": tenant_id}, {"_id": 0})
+        tenant_status = tenant.get('status') if tenant else None
+    
+    return {
+        "id": user_doc['id'],
+        "name": user_doc['name'],
+        "email": user_doc['email'],
+        "phone": user_doc['phone'],
+        "role": user_doc['role'],
+        "tenant_id": tenant_id,
+        "tenant_status": tenant_status,
+        "effective_features": effective_features
+    }
 
 # ==================== HALL ROUTES ====================
 @api_router.get("/halls", response_model=List[Hall])
