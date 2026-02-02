@@ -109,8 +109,39 @@ const CustomersPage = () => {
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center h-64">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-maroon" />
+            <div className="space-y-6" data-testid="customers-page">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                    <div className="space-y-2">
+                        <Skeleton className="h-8 w-32" />
+                        <Skeleton className="h-4 w-48" />
+                    </div>
+                    <Skeleton className="h-10 w-36 rounded-xl" />
+                </div>
+                <SkeletonFilterBar />
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {Array.from({ length: 6 }).map((_, i) => (
+                        <Card key={i} className="p-6">
+                            <div className="flex items-start justify-between mb-4">
+                                <div className="flex items-center gap-3">
+                                    <Skeleton className="h-12 w-12 rounded-full" />
+                                    <div className="space-y-2">
+                                        <Skeleton className="h-5 w-32" />
+                                        <Skeleton className="h-3 w-20" />
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="space-y-2 mb-4">
+                                <Skeleton className="h-4 w-32" />
+                                <Skeleton className="h-4 w-40" />
+                            </div>
+                            <div className="border-t pt-4 grid grid-cols-3 gap-4">
+                                <Skeleton className="h-10 w-full" />
+                                <Skeleton className="h-10 w-full" />
+                                <Skeleton className="h-10 w-full" />
+                            </div>
+                        </Card>
+                    ))}
+                </div>
             </div>
         );
     }
