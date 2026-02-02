@@ -184,6 +184,42 @@ const DashboardPage = () => {
                 </div>
             </motion.div>
 
+            {/* Intelligence Cues */}
+            {intelligenceCues.length > 0 && (
+                <motion.div variants={itemVariants} className="space-y-2">
+                    {intelligenceCues.map((cue, i) => (
+                        <IntelligenceCue key={i} {...cue} />
+                    ))}
+                </motion.div>
+            )}
+
+            {/* Today's Events Alert */}
+            {todayBookings.length > 0 && (
+                <motion.div variants={itemVariants}>
+                    <Card className="bg-gradient-to-r from-violet-50 to-purple-50 border-violet-200 shadow-lg">
+                        <CardContent className="p-4 flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <motion.div 
+                                    className="p-2 bg-violet-100 rounded-xl"
+                                    animate={{ scale: [1, 1.1, 1] }}
+                                    transition={{ duration: 2, repeat: Infinity }}
+                                >
+                                    <CalendarDays className="h-5 w-5 text-violet-600" />
+                                </motion.div>
+                                <span className="text-slate-700">
+                                    <span className="font-bold text-violet-600">{todayBookings.length}</span> event{todayBookings.length > 1 ? 's' : ''} scheduled for today
+                                </span>
+                            </div>
+                            <Link to="/dashboard/bookings">
+                                <Button variant="ghost" size="sm" className="text-violet-600 hover:text-violet-700 hover:bg-violet-100 rounded-xl">
+                                    View <ArrowUpRight className="ml-1 h-4 w-4" />
+                                </Button>
+                            </Link>
+                        </CardContent>
+                    </Card>
+                </motion.div>
+            )}
+
             {/* Stats Cards */}
             <motion.div variants={itemVariants} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {statCards.map((stat, idx) => (
