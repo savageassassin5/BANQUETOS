@@ -912,92 +912,306 @@ const PartyPlanningPage = () => {
                             </div>
                         </TabsContent>
 
-                        {/* Vendors Tab */}
+                        {/* Vendors Tab - Enhanced */}
                         <TabsContent value="vendors" className="space-y-4">
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                {/* DJ Vendor */}
-                                <div>
-                                    <label className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                                        <Music className="h-4 w-4 text-purple-600" />
-                                        DJ / Sound
-                                    </label>
-                                    <Select value={planForm.dj_vendor_id} onValueChange={v => setPlanForm(prev => ({ ...prev, dj_vendor_id: v }))}>
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Select DJ vendor" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="none">None</SelectItem>
-                                            {getVendorsByType('dj').map(v => (
-                                                <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-
-                                {/* Decor Vendor */}
-                                <div>
-                                    <label className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                                        <Palette className="h-4 w-4 text-pink-600" />
-                                        Decoration
-                                    </label>
-                                    <Select value={planForm.decor_vendor_id} onValueChange={v => setPlanForm(prev => ({ ...prev, decor_vendor_id: v }))}>
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Select decor vendor" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="none">None</SelectItem>
-                                            {getVendorsByType('decor').map(v => (
-                                                <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-
-                                {/* Catering Vendor */}
-                                <div>
-                                    <label className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                                        <ChefHat className="h-4 w-4 text-orange-600" />
-                                        Catering
-                                    </label>
-                                    <Select value={planForm.catering_vendor_id} onValueChange={v => setPlanForm(prev => ({ ...prev, catering_vendor_id: v }))}>
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Select catering vendor" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="none">None</SelectItem>
-                                            {getVendorsByType('catering').map(v => (
-                                                <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                            </div>
-
-                            {/* Other Vendors */}
-                            <div>
-                                <label className="text-sm font-medium text-gray-700 mb-2 block">Other Vendors</label>
-                                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                                    {vendors.filter(v => 
-                                        !['dj', 'decor', 'catering'].some(t => v.vendor_type?.toLowerCase().includes(t))
-                                    ).map(vendor => (
-                                        <div
-                                            key={vendor.id}
-                                            onClick={() => toggleCustomVendor(vendor.id)}
-                                            className={`p-3 rounded-xl border-2 cursor-pointer transition-all ${
-                                                planForm.custom_vendors.includes(vendor.id)
-                                                    ? 'border-fuchsia-500 bg-fuchsia-50'
-                                                    : 'border-gray-100 hover:border-gray-200'
-                                            }`}
-                                        >
-                                            <div className="flex items-center gap-2">
-                                                <Truck className="h-4 w-4 text-gray-400" />
-                                                <span className="text-sm font-medium">{vendor.name}</span>
-                                            </div>
-                                            <div className="text-xs text-gray-500 capitalize mt-1">{vendor.vendor_type}</div>
-                                        </div>
+                            {/* Vendor Warnings */}
+                            {vendorWarnings.length > 0 && (
+                                <div className="space-y-2">
+                                    {vendorWarnings.map((warning, i) => (
+                                        <IntelligenceCue 
+                                            key={i}
+                                            type="danger" 
+                                            message={warning.message}
+                                            dismissible={true}
+                                        />
                                     ))}
                                 </div>
+                            )}
+
+                            {/* Vendor Summary Bar */}
+                            <div className="bg-slate-50 rounded-xl p-3 flex flex-wrap items-center justify-between gap-3">
+                                <div className="flex items-center gap-4 text-sm">
+                                    <span className="text-slate-500">Vendors: <strong className="text-slate-700">{vendorAssignments.length}</strong></span>
+                                    <span className="text-slate-500">Total Cost: <strong className="text-emerald-600">{formatCurrency(totalVendorCost)}</strong></span>
+                                    <span className="text-slate-500">Balance: <strong className="text-amber-600">{formatCurrency(vendorBalance)}</strong></span>
+                                </div>
+                                <Button 
+                                    variant="outline" 
+                                    size="sm"
+                                    onClick={() => setShowAddVendor(true)}
+                                    className="bg-white"
+                                >
+                                    <Plus className="h-4 w-4 mr-1" />
+                                    Add Vendor
+                                </Button>
                             </div>
+
+                            {/* Add Vendor Panel */}
+                            <AnimatePresence>
+                                {showAddVendor && (
+                                    <motion.div
+                                        initial={{ opacity: 0, height: 0 }}
+                                        animate={{ opacity: 1, height: 'auto' }}
+                                        exit={{ opacity: 0, height: 0 }}
+                                        className="bg-white border border-slate-200 rounded-xl p-4 space-y-4"
+                                    >
+                                        <div className="flex items-center justify-between">
+                                            <h4 className="font-medium text-gray-900">Add Vendor</h4>
+                                            <Button variant="ghost" size="sm" onClick={() => { setShowAddVendor(false); resetNewVendorForm(); }}>
+                                                <X className="h-4 w-4" />
+                                            </Button>
+                                        </div>
+
+                                        {/* Vendor Mode Selection */}
+                                        <div className="flex gap-2">
+                                            {['select', 'new', 'other'].map(mode => (
+                                                <button
+                                                    key={mode}
+                                                    onClick={() => setNewVendorMode(mode)}
+                                                    className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
+                                                        newVendorMode === mode 
+                                                            ? 'bg-fuchsia-100 text-fuchsia-700 font-medium' 
+                                                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                                    }`}
+                                                >
+                                                    {mode === 'select' ? 'From Directory' : mode === 'new' ? 'New Vendor' : 'Custom/Other'}
+                                                </button>
+                                            ))}
+                                        </div>
+
+                                        {/* Select from directory */}
+                                        {newVendorMode === 'select' && (
+                                            <div className="space-y-3">
+                                                <Select 
+                                                    value={newVendorForm.category} 
+                                                    onValueChange={v => setNewVendorForm(prev => ({ ...prev, category: v }))}
+                                                >
+                                                    <SelectTrigger>
+                                                        <SelectValue placeholder="Category" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        {Object.entries(vendorCategories).map(([key, cfg]) => (
+                                                            <SelectItem key={key} value={key}>{cfg.label}</SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                                <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto">
+                                                    {vendors.map(vendor => (
+                                                        <div
+                                                            key={vendor.id}
+                                                            onClick={() => addVendorAssignment({
+                                                                vendor_id: vendor.id,
+                                                                name: vendor.name,
+                                                                category: newVendorForm.category,
+                                                                phone: vendor.phone,
+                                                                email: vendor.email,
+                                                                cost: 0,
+                                                                advance: 0
+                                                            })}
+                                                            className="p-3 rounded-xl border border-slate-200 cursor-pointer hover:border-fuchsia-300 hover:bg-fuchsia-50 transition-colors"
+                                                        >
+                                                            <div className="font-medium text-sm">{vendor.name}</div>
+                                                            <div className="text-xs text-slate-500">{vendor.vendor_type}</div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* New vendor inline */}
+                                        {(newVendorMode === 'new' || newVendorMode === 'other') && (
+                                            <div className="space-y-3">
+                                                <div className="grid grid-cols-2 gap-3">
+                                                    <Select 
+                                                        value={newVendorForm.category} 
+                                                        onValueChange={v => setNewVendorForm(prev => ({ ...prev, category: v }))}
+                                                    >
+                                                        <SelectTrigger>
+                                                            <SelectValue placeholder="Category" />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            {Object.entries(vendorCategories).map(([key, cfg]) => (
+                                                                <SelectItem key={key} value={key}>{cfg.label}</SelectItem>
+                                                            ))}
+                                                        </SelectContent>
+                                                    </Select>
+                                                    <Input
+                                                        placeholder="Vendor name *"
+                                                        value={newVendorForm.name}
+                                                        onChange={e => setNewVendorForm(prev => ({ ...prev, name: e.target.value }))}
+                                                    />
+                                                </div>
+                                                <div className="grid grid-cols-2 gap-3">
+                                                    <Input
+                                                        placeholder="Phone (optional)"
+                                                        value={newVendorForm.phone}
+                                                        onChange={e => setNewVendorForm(prev => ({ ...prev, phone: e.target.value }))}
+                                                    />
+                                                    <Input
+                                                        placeholder="Email (optional)"
+                                                        value={newVendorForm.email}
+                                                        onChange={e => setNewVendorForm(prev => ({ ...prev, email: e.target.value }))}
+                                                    />
+                                                </div>
+                                                <div className="grid grid-cols-2 gap-3">
+                                                    <Input
+                                                        type="number"
+                                                        placeholder="Cost"
+                                                        value={newVendorForm.cost || ''}
+                                                        onChange={e => setNewVendorForm(prev => ({ ...prev, cost: parseFloat(e.target.value) || 0 }))}
+                                                    />
+                                                    <Input
+                                                        type="number"
+                                                        placeholder="Advance paid"
+                                                        value={newVendorForm.advance || ''}
+                                                        onChange={e => setNewVendorForm(prev => ({ ...prev, advance: parseFloat(e.target.value) || 0 }))}
+                                                    />
+                                                </div>
+                                                <Button 
+                                                    className="w-full"
+                                                    disabled={!newVendorForm.name}
+                                                    onClick={() => addVendorAssignment(newVendorForm)}
+                                                >
+                                                    Add {vendorCategories[newVendorForm.category]?.label || 'Vendor'}
+                                                </Button>
+                                            </div>
+                                        )}
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+
+                            {/* Assigned Vendors List */}
+                            {vendorAssignments.length === 0 ? (
+                                <div className="text-center py-8 text-slate-500">
+                                    <Truck className="h-10 w-10 mx-auto mb-2 text-slate-300" />
+                                    <p className="text-sm">No vendors assigned yet.</p>
+                                    <p className="text-xs text-slate-400 mt-1">Click "Add Vendor" to assign vendors to this event.</p>
+                                </div>
+                            ) : (
+                                <div className="space-y-3">
+                                    {vendorAssignments.map((vendor) => {
+                                        const categoryConfig = vendorCategories[vendor.category] || vendorCategories.other;
+                                        const Icon = categoryConfig.icon;
+                                        return (
+                                            <motion.div
+                                                key={vendor.id}
+                                                initial={{ opacity: 0, y: 10 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                className="bg-white border border-slate-200 rounded-xl p-4"
+                                            >
+                                                <div className="flex items-start justify-between gap-4">
+                                                    <div className="flex items-start gap-3">
+                                                        <div className={`p-2 rounded-lg bg-${categoryConfig.color}-100`}>
+                                                            <Icon className={`h-5 w-5 text-${categoryConfig.color}-600`} />
+                                                        </div>
+                                                        <div>
+                                                            <div className="font-medium text-slate-900">{vendor.name || categoryConfig.label}</div>
+                                                            <div className="text-xs text-slate-500">{categoryConfig.label}</div>
+                                                            {vendor.phone && (
+                                                                <div className="flex items-center gap-1 text-xs text-slate-500 mt-1">
+                                                                    <Phone className="h-3 w-3" /> {vendor.phone}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        onClick={() => removeVendorAssignment(vendor.id)}
+                                                        className="text-slate-400 hover:text-rose-600"
+                                                    >
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </Button>
+                                                </div>
+
+                                                {/* Status Lifecycle */}
+                                                <div className="flex items-center gap-1 mt-3 flex-wrap">
+                                                    {vendorStatuses.map((status) => (
+                                                        <button
+                                                            key={status}
+                                                            onClick={() => updateVendorStatus(vendor.id, status)}
+                                                            className={`px-2 py-1 text-xs rounded-full transition-all ${
+                                                                vendor.status === status
+                                                                    ? 'bg-fuchsia-100 text-fuchsia-700 font-medium ring-2 ring-fuchsia-300'
+                                                                    : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                                                            }`}
+                                                        >
+                                                            {status}
+                                                        </button>
+                                                    ))}
+                                                </div>
+
+                                                {/* Cost Section */}
+                                                {(vendor.cost > 0 || vendor.advance > 0) && (
+                                                    <div className="flex items-center gap-4 mt-3 pt-3 border-t border-slate-100 text-xs">
+                                                        <span className="text-slate-500">Cost: <strong className="text-slate-700">{formatCurrency(vendor.cost)}</strong></span>
+                                                        <span className="text-slate-500">Advance: <strong className="text-emerald-600">{formatCurrency(vendor.advance)}</strong></span>
+                                                        <span className="text-slate-500">Balance: <strong className="text-amber-600">{formatCurrency((vendor.cost || 0) - (vendor.advance || 0))}</strong></span>
+                                                    </div>
+                                                )}
+                                            </motion.div>
+                                        );
+                                    })}
+                                </div>
+                            )}
+
+                            {/* Legacy vendor selects for backward compatibility */}
+                            <details className="mt-4">
+                                <summary className="text-xs text-slate-400 cursor-pointer hover:text-slate-600">Quick assign from directory (legacy)</summary>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3 pt-3 border-t border-slate-100">
+                                    <div>
+                                        <label className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                                            <Music className="h-4 w-4 text-purple-600" />
+                                            DJ / Sound
+                                        </label>
+                                        <Select value={planForm.dj_vendor_id} onValueChange={v => setPlanForm(prev => ({ ...prev, dj_vendor_id: v }))}>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Select DJ vendor" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="none">None</SelectItem>
+                                                {getVendorsByType('dj').map(v => (
+                                                    <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div>
+                                        <label className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                                            <Palette className="h-4 w-4 text-pink-600" />
+                                            Decoration
+                                        </label>
+                                        <Select value={planForm.decor_vendor_id} onValueChange={v => setPlanForm(prev => ({ ...prev, decor_vendor_id: v }))}>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Select decor vendor" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="none">None</SelectItem>
+                                                {getVendorsByType('decor').map(v => (
+                                                    <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div>
+                                        <label className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                                            <ChefHat className="h-4 w-4 text-orange-600" />
+                                            Catering
+                                        </label>
+                                        <Select value={planForm.catering_vendor_id} onValueChange={v => setPlanForm(prev => ({ ...prev, catering_vendor_id: v }))}>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Select catering vendor" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="none">None</SelectItem>
+                                                {getVendorsByType('catering').map(v => (
+                                                    <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                </div>
+                            </details>
                         </TabsContent>
 
                         {/* Staff Tab */}
