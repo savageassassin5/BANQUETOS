@@ -13,9 +13,12 @@ export function AuthProvider({ children }) {
         
         if (token && storedUser) {
             setUser(JSON.parse(storedUser));
-            // Verify token is still valid
+            // Verify token is still valid and get full user data with features
             authAPI.getMe()
-                .then(res => setUser(res.data))
+                .then(res => {
+                    setUser(res.data);
+                    localStorage.setItem('user', JSON.stringify(res.data));
+                })
                 .catch(() => {
                     localStorage.removeItem('token');
                     localStorage.removeItem('user');
@@ -51,11 +54,31 @@ export function AuthProvider({ children }) {
         setUser(null);
     };
 
-    const isAdmin = user?.role === 'admin';
-    const isStaff = user?.role === 'staff' || user?.role === 'admin';
+    // Role checks
+    const isSuperAdmin = user?.role === 'super_admin';
+    const isTenantAdmin = user?.role === 'tenant_admin';
+    const isAdmin = user?.role === 'admin' || user?.role === 'tenant_admin';
+    const isStaff = user?.role === 'staff' || isAdmin;
+    
+    // Feature check helper
+    const hasFeature = (feature) => {
+        if (isSuperAdmin) return true;
+        return user?.effective_features?.[feature] === true;
+    };
 
     return (
-        <AuthContext.Provider value={{ user, loading, login, register, logout, isAdmin, isStaff }}>
+        <AuthContext.Provider value={{ 
+            user, 
+            loading, 
+            login, 
+            register, 
+            logout, 
+            isSuperAdmin,
+            isTenantAdmin,
+            isAdmin, 
+            isStaff,
+            hasFeature
+        }}>
             {children}
         </AuthContext.Provider>
     );

@@ -18,9 +18,14 @@ const LoginPage = () => {
         e.preventDefault();
         setLoading(true);
         try {
-            await login(form.email, form.password);
+            const user = await login(form.email, form.password);
             toast.success('Welcome back!');
-            navigate('/dashboard');
+            // Role-based redirect
+            if (user.role === 'super_admin') {
+                navigate('/superadmin');
+            } else {
+                navigate('/dashboard');
+            }
         } catch (error) {
             toast.error(error.response?.data?.detail || 'Invalid credentials');
         } finally {
