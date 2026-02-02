@@ -133,8 +133,33 @@ const HallsPage = () => {
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center h-64">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-maroon" />
+            <div className="space-y-6" data-testid="halls-page">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                    <div className="space-y-2">
+                        <Skeleton className="h-8 w-24" />
+                        <Skeleton className="h-4 w-48" />
+                    </div>
+                    <Skeleton className="h-10 w-32 rounded-xl" />
+                </div>
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {Array.from({ length: 3 }).map((_, i) => (
+                        <Card key={i} className="overflow-hidden">
+                            <Skeleton className="h-48 w-full" />
+                            <CardContent className="p-6 space-y-4">
+                                <Skeleton className="h-6 w-32" />
+                                <Skeleton className="h-4 w-full" />
+                                <div className="flex justify-between">
+                                    <Skeleton className="h-4 w-24" />
+                                    <Skeleton className="h-5 w-20" />
+                                </div>
+                                <div className="flex gap-2">
+                                    <Skeleton className="h-10 flex-1 rounded-lg" />
+                                    <Skeleton className="h-10 w-10 rounded-lg" />
+                                </div>
+                            </CardContent>
+                        </Card>
+                    ))}
+                </div>
             </div>
         );
     }
