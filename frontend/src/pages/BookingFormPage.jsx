@@ -664,7 +664,7 @@ const BookingFormPage = () => {
                             </CardHeader>
                             <CardContent>
                                 {form.payment_splits.length === 0 ? (
-                                    <p className="text-gray-500 text-center py-4">No advance payments added. Click "Add Payment" to record payments.</p>
+                                    <p className="text-gray-500 text-center py-4">No advance payments added. Click &quot;Add Payment&quot; to record payments.</p>
                                 ) : (
                                     <div className="space-y-3">
                                         {form.payment_splits.map((split, idx) => (
