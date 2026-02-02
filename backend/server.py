@@ -3398,6 +3398,10 @@ async def get_vendor_ledger(vendor_id: str, current_user: dict = Depends(get_cur
 @api_router.post("/vendors/{vendor_id}/transactions")
 async def create_vendor_transaction(vendor_id: str, data: VendorTransactionCreate, current_user: dict = Depends(get_current_user)):
     """Record a transaction (debit, credit, or payment) for a vendor"""
+    # Enforce feature flag and permission
+    await check_feature_access(current_user, 'vendor_ledger')
+    await check_permission(current_user, 'record_payments')
+    
     tenant_filter = await get_tenant_filter(current_user)
     tenant_id = current_user.get('tenant_id')
     
