@@ -81,6 +81,7 @@ const VendorsPage = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setSaveStatus('saving');
         try {
             if (editingVendor) {
                 await vendorAPI.update(editingVendor.id, form);
@@ -89,10 +90,12 @@ const VendorsPage = () => {
                 await vendorAPI.create(form);
                 toast.success('Vendor created successfully!');
             }
+            setSaveStatus('saved');
             loadVendors();
             setDialogOpen(false);
             resetForm();
         } catch (error) {
+            setSaveStatus('error');
             toast.error('Failed to save vendor');
         }
     };
