@@ -8,29 +8,31 @@ import {
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { useAuth } from '../context/AuthContext';
+import { useTenantConfig } from '../context/TenantConfigContext';
 
 const navItems = [
     { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', color: 'from-violet-500 to-purple-500', roles: ['admin', 'tenant_admin', 'reception', 'staff'], feature: null },
-    { path: '/dashboard/bookings', icon: ClipboardList, label: 'Bookings', color: 'from-blue-500 to-cyan-500', roles: ['admin', 'tenant_admin', 'reception'], feature: 'bookings' },
-    { path: '/dashboard/calendar', icon: CalendarDays, label: 'Calendar', color: 'from-emerald-500 to-teal-500', roles: ['admin', 'tenant_admin', 'reception'], feature: 'calendar' },
-    { path: '/dashboard/halls', icon: Building2, label: 'Venues', color: 'from-orange-500 to-amber-500', roles: ['admin', 'tenant_admin', 'reception'], feature: 'halls' },
-    { path: '/dashboard/menu', icon: UtensilsCrossed, label: 'Menu', color: 'from-pink-500 to-rose-500', roles: ['admin', 'tenant_admin', 'reception'], feature: 'menu' },
-    { path: '/dashboard/customers', icon: Users, label: 'Clients', color: 'from-indigo-500 to-blue-500', roles: ['admin', 'tenant_admin', 'reception'], feature: 'customers' },
-    { path: '/dashboard/vendors', icon: Truck, label: 'Vendors', color: 'from-fuchsia-500 to-pink-500', roles: ['admin', 'tenant_admin'], feature: 'vendors' },
-    { path: '/dashboard/payments', icon: CreditCard, label: 'Payments', color: 'from-green-500 to-emerald-500', roles: ['admin', 'tenant_admin', 'reception'], feature: 'payments' },
-    { path: '/dashboard/party-planning', icon: PartyPopper, label: 'Party Planning', color: 'from-amber-500 to-yellow-500', roles: ['admin', 'tenant_admin'], feature: 'party_planning' },
-    { path: '/dashboard/expenses', icon: Receipt, label: 'Expenses', color: 'from-red-500 to-rose-500', roles: ['admin', 'tenant_admin'], feature: 'expenses' },
-    { path: '/dashboard/enquiries', icon: MessageSquare, label: 'Enquiries', color: 'from-cyan-500 to-blue-500', roles: ['admin', 'tenant_admin', 'reception'], feature: 'enquiries' },
+    { path: '/dashboard/bookings', icon: ClipboardList, label: 'Bookings', labelKey: 'bookings', color: 'from-blue-500 to-cyan-500', roles: ['admin', 'tenant_admin', 'reception'], feature: 'bookings' },
+    { path: '/dashboard/calendar', icon: CalendarDays, label: 'Calendar', color: 'from-emerald-500 to-teal-500', roles: ['admin', 'tenant_admin', 'reception'], feature: 'bookings' },
+    { path: '/dashboard/halls', icon: Building2, label: 'Venues', color: 'from-orange-500 to-amber-500', roles: ['admin', 'tenant_admin', 'reception'], feature: 'multi_hall' },
+    { path: '/dashboard/menu', icon: UtensilsCrossed, label: 'Menu', color: 'from-pink-500 to-rose-500', roles: ['admin', 'tenant_admin', 'reception'], feature: null },
+    { path: '/dashboard/customers', icon: Users, label: 'Clients', color: 'from-indigo-500 to-blue-500', roles: ['admin', 'tenant_admin', 'reception'], feature: null },
+    { path: '/dashboard/vendors', icon: Truck, label: 'Vendors', labelKey: 'vendors', color: 'from-fuchsia-500 to-pink-500', roles: ['admin', 'tenant_admin'], feature: 'vendors' },
+    { path: '/dashboard/payments', icon: CreditCard, label: 'Payments', color: 'from-green-500 to-emerald-500', roles: ['admin', 'tenant_admin', 'reception'], feature: null },
+    { path: '/dashboard/party-planning', icon: PartyPopper, label: 'Party Planning', labelKey: 'party_planner', color: 'from-amber-500 to-yellow-500', roles: ['admin', 'tenant_admin'], feature: 'party_planner' },
+    { path: '/dashboard/expenses', icon: Receipt, label: 'Expenses', color: 'from-red-500 to-rose-500', roles: ['admin', 'tenant_admin'], feature: 'profit_tracking' },
+    { path: '/dashboard/enquiries', icon: MessageSquare, label: 'Enquiries', color: 'from-cyan-500 to-blue-500', roles: ['admin', 'tenant_admin', 'reception'], feature: null },
     { path: '/dashboard/alerts', icon: AlertTriangle, label: 'Alerts', color: 'from-red-500 to-orange-500', roles: ['admin', 'tenant_admin'], feature: null },
-    { path: '/dashboard/analytics', icon: BarChart3, label: 'Analytics', color: 'from-purple-500 to-violet-500', roles: ['admin', 'tenant_admin'], feature: 'analytics' },
+    { path: '/dashboard/analytics', icon: BarChart3, label: 'Analytics', color: 'from-purple-500 to-violet-500', roles: ['admin', 'tenant_admin'], feature: 'advanced_reports' },
     { path: '/dashboard/reports', icon: FileText, label: 'Reports', color: 'from-yellow-500 to-orange-500', roles: ['admin', 'tenant_admin'], feature: 'reports' },
-    { path: '/dashboard/notifications', icon: Bell, label: 'Notifications', color: 'from-sky-500 to-indigo-500', roles: ['admin', 'tenant_admin'], feature: 'notifications' },
+    { path: '/dashboard/notifications', icon: Bell, label: 'Notifications', color: 'from-sky-500 to-indigo-500', roles: ['admin', 'tenant_admin'], feature: null },
 ];
 
 const DashboardLayout = ({ children }) => {
     const location = useLocation();
     const navigate = useNavigate();
-    const { user, logout, hasFeature } = useAuth();
+    const { user, logout } = useAuth();
+    const { isFeatureEnabled, getLabel } = useTenantConfig();
     const [sidebarOpen, setSidebarOpen] = useState(false);
     
     const userRole = user?.role || 'reception';
@@ -41,12 +43,12 @@ const DashboardLayout = ({ children }) => {
         navigate('/');
     };
 
-    // Filter nav items based on user role AND feature flags
+    // Filter nav items based on user role AND feature flags from tenant_config
     const filteredNavItems = navItems.filter(item => {
         // Check role
         if (!item.roles.includes(userRole)) return false;
-        // Check feature (if specified)
-        if (item.feature && !hasFeature(item.feature)) return false;
+        // Check feature flag from tenant_config
+        if (item.feature && !isFeatureEnabled(item.feature)) return false;
         return true;
     });
 
