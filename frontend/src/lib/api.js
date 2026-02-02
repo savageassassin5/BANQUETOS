@@ -96,8 +96,14 @@ export const partyExpensesAPI = {
 export const partyPlanningAPI = {
     getAll: () => api.get('/party-plans'),
     getOne: (bookingId) => api.get(`/party-plans/${bookingId}`),
+    getByBooking: (bookingId) => api.get(`/party-plans/by-booking/${bookingId}`),
     create: (data) => api.post('/party-plans', data),
     update: (bookingId, data) => api.put(`/party-plans/${bookingId}`, data),
+    acknowledgeChanges: (bookingId) => api.post(`/party-plans/${bookingId}/acknowledge-changes`),
+    suggestStaff: (bookingId) => api.get(`/party-plans/suggest-staff/${bookingId}`),
+    generateTimeline: (bookingId) => api.post(`/party-plans/${bookingId}/generate-timeline`),
+    updateTimelineTask: (bookingId, taskId, status) => api.put(`/party-plans/${bookingId}/timeline/${taskId}`, null, { params: { status } }),
+    getProfitSnapshot: (bookingId) => api.get(`/party-plans/${bookingId}/profit-snapshot`),
 };
 
 // Vendor Payments API (Admin only)
