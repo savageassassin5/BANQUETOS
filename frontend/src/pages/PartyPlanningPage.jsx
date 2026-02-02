@@ -586,16 +586,8 @@ const PartyPlanningPage = () => {
     const getHallName = (hallId) => halls[hallId]?.name || 'Unknown';
     const getVendorName = (vendorId) => vendors.find(v => v.id === vendorId)?.name || '';
 
-    // Readiness score badge
-    const ReadinessScore = ({ score, breakdown }) => {
-        const color = score >= 80 ? 'green' : score >= 50 ? 'amber' : 'red';
-        return (
-            <div className="flex items-center gap-2">
-                <div className={`text-${color}-600 font-bold text-xl`}>{score}%</div>
-                <div className="text-xs text-gray-500">Ready</div>
-            </div>
-        );
-    };
+    // Helper function for readiness color
+    const getReadinessColor = (score) => score >= 80 ? 'green' : score >= 50 ? 'amber' : 'red';
 
     if (!isAdmin) {
         return (
