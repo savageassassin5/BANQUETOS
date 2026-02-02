@@ -786,15 +786,27 @@ const BookingFormPage = () => {
                                     )}
                                 </div>
 
-                                <Button type="submit" className="w-full bg-gradient-to-r from-fuchsia-600 to-pink-500 hover:from-fuchsia-700 hover:to-pink-600 text-white rounded-xl" disabled={saving} data-testid="save-booking-btn">
-                                    {saving ? 'Saving...' : (isEditing ? 'Update Booking' : 'Create Booking')}
+                                <Button 
+                                    type="submit" 
+                                    className="w-full bg-gradient-to-r from-fuchsia-600 to-pink-500 hover:from-fuchsia-700 hover:to-pink-600 text-white rounded-xl min-h-[48px]" 
+                                    disabled={saving} 
+                                    data-testid="save-booking-btn"
+                                >
+                                    {saving ? (
+                                        <>
+                                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                            Saving...
+                                        </>
+                                    ) : (
+                                        isEditing ? 'Update Booking' : 'Create Booking'
+                                    )}
                                 </Button>
                             </CardContent>
                         </Card>
                     </div>
                 </div>
             </form>
-        </div>
+        </motion.div>
     );
 };
 
