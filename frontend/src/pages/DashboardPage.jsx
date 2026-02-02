@@ -403,14 +403,14 @@ const DashboardPage = () => {
                                                 transition={{ delay: idx * 0.1 }}
                                             >
                                                 <td className="py-4 px-6">
-                                                    <span className="font-mono text-sm font-medium text-purple-600">{booking.booking_number}</span>
+                                                    <span className="font-mono text-sm font-medium text-purple-400">{booking.booking_number}</span>
                                                 </td>
-                                                <td className="py-4 px-6 font-medium text-slate-700">{booking.customer_name}</td>
-                                                <td className="py-4 px-6 text-slate-500 capitalize">{booking.event_type}</td>
-                                                <td className="py-4 px-6 text-slate-500">{formatDate(booking.event_date)}</td>
-                                                <td className="py-4 px-6 font-semibold text-slate-700">{formatCurrency(booking.total_amount)}</td>
-                                                <td className="py-4 px-6 text-emerald-600">{formatCurrency(booking.advance_paid || 0)}</td>
-                                                <td className="py-4 px-6 text-orange-600 font-medium">{formatCurrency(booking.balance_due || 0)}</td>
+                                                <td className="py-4 px-6 font-medium text-white">{booking.customer_name}</td>
+                                                <td className="py-4 px-6 text-purple-300/70 capitalize">{booking.event_type}</td>
+                                                <td className="py-4 px-6 text-purple-300/70">{formatDate(booking.event_date)}</td>
+                                                <td className="py-4 px-6 font-semibold text-white">{formatCurrency(booking.total_amount)}</td>
+                                                <td className="py-4 px-6 text-emerald-400">{formatCurrency(booking.advance_paid || 0)}</td>
+                                                <td className="py-4 px-6 text-amber-400 font-medium">{formatCurrency(booking.balance_due || 0)}</td>
                                                 <td className="py-4 px-6">
                                                     <StatusBadge type="booking" status={booking.status} size="sm" />
                                                 </td>
@@ -419,8 +419,8 @@ const DashboardPage = () => {
                                     ) : (
                                         <tr>
                                             <td colSpan="8" className="py-12 text-center">
-                                                <CalendarDays className="h-12 w-12 text-slate-300 mx-auto mb-3" />
-                                                <p className="text-slate-400">No bookings yet. Click &quot;Load Sample Data&quot; to add demo bookings.</p>
+                                                <CalendarDays className="h-12 w-12 text-purple-700 mx-auto mb-3" />
+                                                <p className="text-purple-400/60">No bookings yet. Click &quot;Load Sample Data&quot; to add demo bookings.</p>
                                             </td>
                                         </tr>
                                     )}
