@@ -134,6 +134,179 @@ class Tenant(BaseModel):
     features_override: dict = {}  # Per-tenant feature overrides
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
+# ==================== COUNTRY CONFIGURATIONS ====================
+COUNTRY_CONFIGS = {
+    "India": {"timezone": "Asia/Kolkata", "currency": "INR", "currency_symbol": "₹", "tax_type": "GST", "tax_rate": 18, "date_format": "DD/MM/YYYY", "time_format": "12h"},
+    "UAE": {"timezone": "Asia/Dubai", "currency": "AED", "currency_symbol": "د.إ", "tax_type": "VAT", "tax_rate": 5, "date_format": "DD/MM/YYYY", "time_format": "12h"},
+    "Canada": {"timezone": "America/Toronto", "currency": "CAD", "currency_symbol": "$", "tax_type": "GST", "tax_rate": 5, "date_format": "MM/DD/YYYY", "time_format": "12h"},
+    "Saudi Arabia": {"timezone": "Asia/Riyadh", "currency": "SAR", "currency_symbol": "﷼", "tax_type": "VAT", "tax_rate": 15, "date_format": "DD/MM/YYYY", "time_format": "12h"},
+    "UK": {"timezone": "Europe/London", "currency": "GBP", "currency_symbol": "£", "tax_type": "VAT", "tax_rate": 20, "date_format": "DD/MM/YYYY", "time_format": "24h"},
+    "Australia": {"timezone": "Australia/Sydney", "currency": "AUD", "currency_symbol": "$", "tax_type": "GST", "tax_rate": 10, "date_format": "DD/MM/YYYY", "time_format": "12h"},
+    "Singapore": {"timezone": "Asia/Singapore", "currency": "SGD", "currency_symbol": "$", "tax_type": "GST", "tax_rate": 9, "date_format": "DD/MM/YYYY", "time_format": "12h"},
+    "USA": {"timezone": "America/New_York", "currency": "USD", "currency_symbol": "$", "tax_type": "None", "tax_rate": 0, "date_format": "MM/DD/YYYY", "time_format": "12h"},
+    "Malaysia": {"timezone": "Asia/Kuala_Lumpur", "currency": "MYR", "currency_symbol": "RM", "tax_type": "SST", "tax_rate": 6, "date_format": "DD/MM/YYYY", "time_format": "12h"},
+    "Indonesia": {"timezone": "Asia/Jakarta", "currency": "IDR", "currency_symbol": "Rp", "tax_type": "VAT", "tax_rate": 11, "date_format": "DD/MM/YYYY", "time_format": "24h"},
+    "Philippines": {"timezone": "Asia/Manila", "currency": "PHP", "currency_symbol": "₱", "tax_type": "VAT", "tax_rate": 12, "date_format": "MM/DD/YYYY", "time_format": "12h"},
+    "Qatar": {"timezone": "Asia/Qatar", "currency": "QAR", "currency_symbol": "﷼", "tax_type": "None", "tax_rate": 0, "date_format": "DD/MM/YYYY", "time_format": "12h"},
+}
+
+# ==================== TENANT CONFIG SCHEMA ====================
+class FeatureFlags(BaseModel):
+    """Per-tenant feature toggles"""
+    bookings: bool = True
+    party_planner: bool = True
+    operations_checklist: bool = False
+    vendors: bool = True
+    vendor_ledger: bool = True
+    staff_planning: bool = False
+    profit_tracking: bool = False
+    reports: bool = True
+    advanced_reports: bool = False
+    event_day_mode: bool = False
+    multi_hall: bool = False
+    custom_fields: bool = False
+
+class WorkflowRules(BaseModel):
+    """Per-tenant workflow rules"""
+    advance_required_percent: int = 50
+    vendors_mandatory_before_confirm: bool = False
+    staff_mandatory_before_event: bool = False
+    lock_editing_hours_before: int = 0  # 0 = no lock
+    discount_approval_required: bool = False
+    profit_margin_warning_percent: int = 20
+    vendor_unpaid_warning_days: int = 7
+
+class RolePermission(BaseModel):
+    """Permissions for a single role"""
+    view_bookings: bool = True
+    edit_bookings: bool = False
+    view_profit: bool = False
+    edit_profit: bool = False
+    view_vendor_ledger: bool = False
+    record_payments: bool = False
+    delete_records: bool = False
+    export_reports: bool = False
+    manage_staff: bool = False
+    manage_vendors: bool = False
+    approve_discounts: bool = False
+
+class PermissionMatrix(BaseModel):
+    """Per-tenant role permissions"""
+    owner: RolePermission = Field(default_factory=lambda: RolePermission(
+        view_bookings=True, edit_bookings=True, view_profit=True, edit_profit=True,
+        view_vendor_ledger=True, record_payments=True, delete_records=True, export_reports=True,
+        manage_staff=True, manage_vendors=True, approve_discounts=True
+    ))
+    manager: RolePermission = Field(default_factory=lambda: RolePermission(
+        view_bookings=True, edit_bookings=True, view_profit=True, edit_profit=False,
+        view_vendor_ledger=True, record_payments=True, delete_records=False, export_reports=True,
+        manage_staff=True, manage_vendors=True, approve_discounts=True
+    ))
+    reception: RolePermission = Field(default_factory=lambda: RolePermission(
+        view_bookings=True, edit_bookings=True, view_profit=False, edit_profit=False,
+        view_vendor_ledger=False, record_payments=True, delete_records=False, export_reports=False,
+        manage_staff=False, manage_vendors=False, approve_discounts=False
+    ))
+    accountant: RolePermission = Field(default_factory=lambda: RolePermission(
+        view_bookings=True, edit_bookings=False, view_profit=True, edit_profit=True,
+        view_vendor_ledger=True, record_payments=True, delete_records=False, export_reports=True,
+        manage_staff=False, manage_vendors=True, approve_discounts=False
+    ))
+    ops: RolePermission = Field(default_factory=lambda: RolePermission(
+        view_bookings=True, edit_bookings=False, view_profit=False, edit_profit=False,
+        view_vendor_ledger=False, record_payments=False, delete_records=False, export_reports=False,
+        manage_staff=True, manage_vendors=True, approve_discounts=False
+    ))
+    custom: RolePermission = Field(default_factory=RolePermission)
+
+class EventTypeTemplate(BaseModel):
+    """Event type template with defaults"""
+    name: str
+    default_vendors: List[str] = []  # vendor category IDs
+    default_staff_roles: List[dict] = []  # [{role, count, wage}]
+    default_checklist: List[str] = []
+    default_advance_percent: int = 50
+    profit_target_percent: int = 30
+
+class CustomField(BaseModel):
+    """Custom field definition"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str
+    field_type: str = "text"  # text, number, dropdown, date
+    options: List[str] = []  # For dropdown
+    required: bool = False
+    visible_to_roles: List[str] = ["owner", "manager", "reception"]
+
+class UIVisibility(BaseModel):
+    """Per-tenant UI visibility controls"""
+    show_profit_tab: bool = True
+    show_staff_tab: bool = True
+    show_vendors_tab: bool = True
+    show_checklist_tab: bool = True
+    label_party_planner: str = "Party Planner"
+    label_vendors: str = "Vendors"
+    label_bookings: str = "Bookings"
+    readonly_modules: List[str] = []  # ["profit", "vendors"]
+
+class FinancialControls(BaseModel):
+    """Per-tenant financial controls"""
+    allowed_payment_methods: List[str] = ["cash", "upi", "bank_transfer", "cheque", "card"]
+    tax_rate: float = 18.0
+    tax_type: str = "GST"
+    max_discount_percent_reception: int = 5
+    max_discount_percent_manager: int = 15
+    vendor_advance_required_percent: int = 30
+    rounding_rule: str = "nearest"  # nearest, up, down
+
+class DataGovernance(BaseModel):
+    """Per-tenant data governance settings"""
+    enable_audit_logs: bool = True
+    soft_delete_enabled: bool = True
+    allow_data_export: bool = True
+    demo_mode: bool = False
+    data_retention_days: int = 365
+
+class TenantConfig(BaseModel):
+    """Complete tenant configuration"""
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    tenant_id: str
+    version: int = 1
+    last_updated: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    
+    # Regional settings
+    country: str = "India"
+    timezone: str = "Asia/Kolkata"
+    currency: str = "INR"
+    currency_symbol: str = "₹"
+    tax_type: str = "GST"
+    date_format: str = "DD/MM/YYYY"
+    time_format: str = "12h"
+    
+    # Configuration sections
+    feature_flags: FeatureFlags = Field(default_factory=FeatureFlags)
+    workflow_rules: WorkflowRules = Field(default_factory=WorkflowRules)
+    permissions: PermissionMatrix = Field(default_factory=PermissionMatrix)
+    event_templates: List[EventTypeTemplate] = []
+    custom_fields: List[CustomField] = []
+    ui_visibility: UIVisibility = Field(default_factory=UIVisibility)
+    financial_controls: FinancialControls = Field(default_factory=FinancialControls)
+    data_governance: DataGovernance = Field(default_factory=DataGovernance)
+    
+    # History for rollback
+    previous_versions: List[dict] = []
+
+class TenantConfigUpdate(BaseModel):
+    """Partial update for tenant config"""
+    feature_flags: Optional[dict] = None
+    workflow_rules: Optional[dict] = None
+    permissions: Optional[dict] = None
+    event_templates: Optional[List[dict]] = None
+    custom_fields: Optional[List[dict]] = None
+    ui_visibility: Optional[dict] = None
+    financial_controls: Optional[dict] = None
+    data_governance: Optional[dict] = None
+
 # ==================== MODELS ====================
 class UserCreate(BaseModel):
     name: str
