@@ -600,3 +600,21 @@ html.lenis {
     box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.5);
 }
 
+/* Skeleton shimmer animation */
+@keyframes shimmer {
+    0% {
+        transform: translateX(-100%);
+    }
+    100% {
+        transform: translateX(100%);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    @keyframes shimmer {
+        0%, 100% {
+            transform: translateX(-100%);
+        }
+    }
+}
+
