@@ -112,10 +112,52 @@ const PaymentsPage = () => {
         .filter(b => b.status !== 'cancelled')
         .reduce((sum, b) => sum + (b.balance_due || 0), 0);
 
+    // Calculate overdue bookings (pending for > 7 days)
+    const overdueBookings = pendingBookings.filter(b => {
+        const eventDate = new Date(b.event_date);
+        const today = new Date();
+        const daysSinceEvent = Math.floor((today - eventDate) / (1000 * 60 * 60 * 24));
+        return daysSinceEvent > 7 && b.balance_due > 0;
+    });
+
     if (loading) {
         return (
-            <div className="flex items-center justify-center h-64">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-fuchsia-600" />
+            <div className="space-y-6" data-testid="payments-page">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                    <div className="space-y-2">
+                        <Skeleton className="h-8 w-32" />
+                        <Skeleton className="h-4 w-48" />
+                    </div>
+                    <Skeleton className="h-10 w-40 rounded-xl" />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {Array.from({ length: 3 }).map((_, i) => (
+                        <SkeletonMetric key={i} />
+                    ))}
+                </div>
+                <Card>
+                    <CardHeader>
+                        <Skeleton className="h-6 w-36" />
+                    </CardHeader>
+                    <CardContent className="p-0">
+                        <div className="overflow-x-auto">
+                            <table className="w-full">
+                                <thead className="bg-gray-50">
+                                    <tr>
+                                        {['Payment Date', 'Booking', 'Customer', 'Amount', 'Method', 'Recorded By', 'Notes'].map((h, i) => (
+                                            <th key={i} className="text-left py-4 px-4 text-sm text-slate-400">{h}</th>
+                                        ))}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {Array.from({ length: 5 }).map((_, i) => (
+                                        <SkeletonPaymentRow key={i} />
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </CardContent>
+                </Card>
             </div>
         );
     }
