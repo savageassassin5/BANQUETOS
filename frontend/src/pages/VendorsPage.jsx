@@ -44,6 +44,8 @@ const VendorsPage = () => {
     });
     const [serviceInput, setServiceInput] = useState('');
     const [saveStatus, setSaveStatus] = useSaveState();
+    const [saving, setSaving] = useState(false);
+    const [deleting, setDeleting] = useState(null);
 
     useEffect(() => {
         loadVendors();
