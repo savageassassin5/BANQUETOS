@@ -30,6 +30,14 @@ import SuperAdminDashboard from "./pages/superadmin/SuperAdminDashboard";
 import TenantsPage from "./pages/superadmin/TenantsPage";
 import TenantDetailPage from "./pages/superadmin/TenantDetailPage";
 import PlansPage from "./pages/superadmin/PlansPage";
+import FeatureFlagsPage from "./pages/superadmin/FeatureFlagsPage";
+import WorkflowRulesPage from "./pages/superadmin/WorkflowRulesPage";
+import PermissionsPage from "./pages/superadmin/PermissionsPage";
+import TemplatesPage from "./pages/superadmin/TemplatesPage";
+import CustomFieldsPage from "./pages/superadmin/CustomFieldsPage";
+import UIControlsPage from "./pages/superadmin/UIControlsPage";
+import FinancialPage from "./pages/superadmin/FinancialPage";
+import DataGovernancePage from "./pages/superadmin/DataGovernancePage";
 
 // Layout
 import DashboardLayout from "./components/DashboardLayout";
