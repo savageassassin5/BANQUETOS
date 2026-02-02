@@ -331,19 +331,51 @@ const BookingFormPage = () => {
     }
 
     return (
-        <div className="max-w-5xl mx-auto space-y-6" data-testid="booking-form-page">
+        <motion.div 
+            className="max-w-5xl mx-auto space-y-6" 
+            data-testid="booking-form-page"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+        >
             {/* Header */}
-            <div className="flex items-center gap-4">
-                <Button variant="ghost" size="icon" onClick={() => navigate('/dashboard/bookings')}>
-                    <ArrowLeft className="h-5 w-5" />
-                </Button>
-                <div>
-                    <h1 className="font-heading text-2xl md:text-3xl font-bold text-gray-900">
-                        {isEditing ? 'Edit Booking' : 'New Booking'}
-                    </h1>
-                    <p className="text-gray-600 mt-1">Fill in the details to create a booking</p>
+            <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-4">
+                    <Button variant="ghost" size="icon" onClick={() => navigate('/dashboard/bookings')}>
+                        <ArrowLeft className="h-5 w-5" />
+                    </Button>
+                    <div>
+                        <div className="flex items-center gap-3">
+                            <h1 className="font-heading text-2xl md:text-3xl font-bold text-gray-900">
+                                {isEditing ? 'Edit Booking' : 'New Booking'}
+                            </h1>
+                            {isEditing && form.status && (
+                                <StatusBadge type="booking" status={form.status} size="md" />
+                            )}
+                        </div>
+                        <div className="flex items-center gap-2 text-gray-600 mt-1">
+                            <span>Fill in the details to create a booking</span>
+                            {lastUpdated && (
+                                <span className="flex items-center gap-1 text-xs text-slate-400 border-l border-slate-200 pl-2">
+                                    <Clock className="h-3 w-3" />
+                                    Last updated: {new Date(lastUpdated).toLocaleDateString()}
+                                </span>
+                            )}
+                        </div>
+                    </div>
                 </div>
+                <SaveFeedback status={saveStatus} />
             </div>
+
+            {/* Party Plan Warning */}
+            {isEditing && hasPartyPlan && (
+                <IntelligenceCue
+                    type="warning"
+                    message="This booking has an active Party Plan"
+                    subtext="Changes to guest count, date, or event type may affect the plan"
+                    icon={AlertTriangle}
+                />
+            )}
 
             <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="grid lg:grid-cols-3 gap-6">
