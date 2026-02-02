@@ -110,6 +110,7 @@ const PartyPlanningPage = () => {
     const [hasPlan, setHasPlan] = useState(false);
     const [planDialogOpen, setPlanDialogOpen] = useState(false);
     const [saving, setSaving] = useState(false);
+    const [saveStatus, setSaveStatus] = useSaveState();
     
     // Booking change tracking
     const [bookingChanged, setBookingChanged] = useState(false);
@@ -120,6 +121,14 @@ const PartyPlanningPage = () => {
     const [staffSuggestions, setStaffSuggestions] = useState([]);
     const [activeTab, setActiveTab] = useState('overview');
     
+    // Vendor management state
+    const [vendorAssignments, setVendorAssignments] = useState([]);
+    const [showAddVendor, setShowAddVendor] = useState(false);
+    const [newVendorMode, setNewVendorMode] = useState('select'); // 'select', 'new', 'other'
+    const [newVendorForm, setNewVendorForm] = useState({
+        name: '', phone: '', email: '', category: 'other', cost: 0, advance: 0, notes: '', status: 'invited'
+    });
+    
     // Plan form
     const [planForm, setPlanForm] = useState({
         booking_id: '',
@@ -127,6 +136,7 @@ const PartyPlanningPage = () => {
         decor_vendor_id: '',
         catering_vendor_id: '',
         custom_vendors: [],
+        vendor_assignments: [],
         staff_assignments: [],
         timeline_tasks: [],
         inventory: {},
@@ -136,11 +146,12 @@ const PartyPlanningPage = () => {
     });
 
     const staffRoles = [
-        { value: 'waiter', label: 'Waiter', icon: User },
-        { value: 'chef', label: 'Chef', icon: ChefHat },
-        { value: 'helper', label: 'Helper', icon: Users },
-        { value: 'supervisor', label: 'Supervisor', icon: UserCheck },
-        { value: 'custom', label: 'Other', icon: User }
+        { value: 'waiter', label: 'Waiter', icon: User, defaultWage: 500 },
+        { value: 'chef', label: 'Chef', icon: ChefHat, defaultWage: 800 },
+        { value: 'helper', label: 'Helper', icon: Users, defaultWage: 400 },
+        { value: 'supervisor', label: 'Supervisor', icon: UserCheck, defaultWage: 1000 },
+        { value: 'usher', label: 'Usher', icon: User, defaultWage: 450 },
+        { value: 'custom', label: 'Other', icon: User, defaultWage: 500 }
     ];
 
     useEffect(() => {
