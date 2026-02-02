@@ -589,10 +589,11 @@ class EnquiryCreate(BaseModel):
     name: str
     email: EmailStr
     phone: str
-    event_type: EventType
-    event_date: str
-    guest_count: int
+    event_type: Optional[EventType] = None
+    event_date: Optional[str] = None
+    guest_count: Optional[int] = None
     message: str = ""
+    source: str = "website"  # website, demo_request, contact_form
 
 class Enquiry(BaseModel):
     model_config = ConfigDict(extra="ignore")
@@ -600,10 +601,11 @@ class Enquiry(BaseModel):
     name: str
     email: EmailStr
     phone: str
-    event_type: EventType
-    event_date: str
-    guest_count: int
+    event_type: Optional[EventType] = None
+    event_date: Optional[str] = None
+    guest_count: Optional[int] = None
     message: str = ""
+    source: str = "website"
     is_contacted: bool = False
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
