@@ -1587,7 +1587,7 @@ async def get_party_plan_by_booking(booking_id: str, current_user: dict = Depend
         if snapshot.get('guest_count') != booking.get('guest_count'):
             change_warnings.append(f"Guest count changed from {snapshot.get('guest_count')} to {booking.get('guest_count')}")
         if snapshot.get('hall_id') != booking.get('hall_id'):
-            change_warnings.append(f"Hall/Venue changed")
+            change_warnings.append("Hall/Venue changed")
         
         if change_warnings:
             plan['booking_changed'] = True
