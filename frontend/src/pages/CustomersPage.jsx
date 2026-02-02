@@ -213,8 +213,20 @@ const CustomersPage = () => {
                                 <DialogClose asChild>
                                     <Button type="button" variant="outline" className="border-slate-200 rounded-xl">Cancel</Button>
                                 </DialogClose>
-                                <Button type="submit" className="bg-gradient-to-r from-fuchsia-600 to-pink-500 hover:from-fuchsia-700 hover:to-pink-600 text-white rounded-xl" data-testid="save-customer-btn">
-                                    {editingCustomer ? 'Update' : 'Create'} Customer
+                                <Button 
+                                    type="submit" 
+                                    disabled={saving}
+                                    className="bg-gradient-to-r from-fuchsia-600 to-pink-500 hover:from-fuchsia-700 hover:to-pink-600 text-white rounded-xl min-w-[120px]" 
+                                    data-testid="save-customer-btn"
+                                >
+                                    {saving ? (
+                                        <>
+                                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                            Saving...
+                                        </>
+                                    ) : (
+                                        `${editingCustomer ? 'Update' : 'Create'} Customer`
+                                    )}
                                 </Button>
                             </div>
                         </form>
