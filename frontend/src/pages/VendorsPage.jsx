@@ -318,14 +318,22 @@ const VendorsPage = () => {
             </motion.div>
 
             {/* Vendors Grid */}
-            <motion.div variants={itemVariants} className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <motion.div 
+                variants={itemVariants} 
+                initial="hidden"
+                animate="visible"
+                className="grid md:grid-cols-2 lg:grid-cols-3 gap-6"
+            >
                 {filteredVendors.map((vendor, idx) => {
                     const typeConfig = getTypeConfig(vendor.vendor_type);
                     return (
                         <motion.div 
-                            key={vendor.id} 
+                            key={vendor.id}
+                            variants={cardVariants}
+                            initial="hidden"
+                            animate="visible"
                             whileHover={{ y: -4, scale: 1.02 }}
-                            transition={{ type: "spring", stiffness: 400 }}
+                            transition={{ type: "spring", stiffness: 400, delay: idx * 0.05 }}
                         >
                             <Card className="bg-white border-0 shadow-lg rounded-2xl overflow-hidden hover:shadow-xl transition-all" data-testid={`vendor-card-${vendor.id}`}>
                                 <div className={`h-2 bg-gradient-to-r ${typeConfig.color}`} />
