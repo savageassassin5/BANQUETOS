@@ -3382,6 +3382,56 @@ async def get_deleted_bookings(current_user: dict = Depends(get_current_user)):
     bookings = await db.bookings.find(query, {"_id": 0}).to_list(500)
     return bookings
 
+# ==================== DATA MIGRATION ENDPOINT ====================
+@api_router.post("/superadmin/migrate-data")
+async def migrate_existing_data(current_user: dict = Depends(get_current_user)):
+    """Migrate existing data to the first active tenant"""
+    require_super_admin(current_user)
+    
+    # Find first active tenant
+    tenant = await db.tenants.find_one({"status": "active"}, {"_id": 0})
+    if not tenant:
+        raise HTTPException(status_code=400, detail="No active tenant found")
+    
+    tenant_id = tenant['id']
+    
+    # Migrate all data without tenant_id to this tenant
+    collections_to_migrate = ['bookings', 'halls', 'menu_items', 'customers', 'vendors', 'payments', 'expenses', 'party_expenses']
+    
+    results = {}
+    for collection in collections_to_migrate:
+        result = await db[collection].update_many(
+            {"tenant_id": {"$exists": False}},
+            {"$set": {"tenant_id": tenant_id}}
+        )
+        results[collection] = result.modified_count
+        
+        # Also migrate where tenant_id is null
+        result2 = await db[collection].update_many(
+            {"tenant_id": None},
+            {"$set": {"tenant_id": tenant_id}}
+        )
+        results[collection] += result2.modified_count
+    
+    # Migrate users (except super_admin)
+    user_result = await db.users.update_many(
+        {"tenant_id": {"$exists": False}, "role": {"$ne": "super_admin"}},
+        {"$set": {"tenant_id": tenant_id}}
+    )
+    results['users'] = user_result.modified_count
+    
+    user_result2 = await db.users.update_many(
+        {"tenant_id": None, "role": {"$ne": "super_admin"}},
+        {"$set": {"tenant_id": tenant_id}}
+    )
+    results['users'] += user_result2.modified_count
+    
+    return {
+        "message": f"Data migrated to tenant '{tenant['business_name']}'",
+        "tenant_id": tenant_id,
+        "migrated_records": results
+    }
+
 # ==================== SEED DATA ====================
 @api_router.post("/seed")
 async def seed_data():
