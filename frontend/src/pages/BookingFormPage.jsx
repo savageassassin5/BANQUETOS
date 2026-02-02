@@ -106,6 +106,9 @@ const BookingFormPage = () => {
                     linked_vendors: booking.linked_vendors || [],
                     status: booking.status
                 });
+                setLastUpdated(booking.updated_at || booking.created_at);
+                // Check if there's a party plan linked
+                setHasPartyPlan(booking.has_party_plan || false);
             }
         } catch (error) {
             console.error('Failed to load data:', error);
