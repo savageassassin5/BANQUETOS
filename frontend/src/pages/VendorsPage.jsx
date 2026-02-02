@@ -342,9 +342,42 @@ const VendorsPage = () => {
                                             <Button variant="ghost" size="icon" onClick={() => handleEdit(vendor)} className="text-slate-400 hover:text-purple-600 hover:bg-purple-50 rounded-xl">
                                                 <Edit className="h-4 w-4" />
                                             </Button>
-                                            <Button variant="ghost" size="icon" onClick={() => handleDelete(vendor.id)} className="text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-xl">
-                                                <Trash2 className="h-4 w-4" />
-                                            </Button>
+                                            <AlertDialog>
+                                                <AlertDialogTrigger asChild>
+                                                    <Button 
+                                                        variant="ghost" 
+                                                        size="icon" 
+                                                        className="text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-xl"
+                                                        disabled={deleting === vendor.id}
+                                                    >
+                                                        {deleting === vendor.id ? (
+                                                            <Loader2 className="h-4 w-4 animate-spin" />
+                                                        ) : (
+                                                            <Trash2 className="h-4 w-4" />
+                                                        )}
+                                                    </Button>
+                                                </AlertDialogTrigger>
+                                                <AlertDialogContent>
+                                                    <AlertDialogHeader>
+                                                        <AlertDialogTitle className="flex items-center gap-2">
+                                                            <AlertTriangle className="h-5 w-5 text-amber-500" />
+                                                            Delete Vendor
+                                                        </AlertDialogTitle>
+                                                        <AlertDialogDescription>
+                                                            Are you sure you want to delete <strong>{vendor.name}</strong>? This action cannot be undone.
+                                                        </AlertDialogDescription>
+                                                    </AlertDialogHeader>
+                                                    <AlertDialogFooter>
+                                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                        <AlertDialogAction
+                                                            onClick={() => handleDelete(vendor.id)}
+                                                            className="bg-red-600 hover:bg-red-700"
+                                                        >
+                                                            Delete
+                                                        </AlertDialogAction>
+                                                    </AlertDialogFooter>
+                                                </AlertDialogContent>
+                                            </AlertDialog>
                                         </div>
                                     </div>
 
