@@ -1,11 +1,13 @@
-# BanquetOS - Banquet Management Software PRD
+# BanquetOS - Multi-Tenant SaaS Banquet Management Platform
 
 ## Original Problem Statement
-Build a comprehensive Banquet Management Software (BanquetOS) for banquet hall owners. The system manages bookings, customers, halls, menus, vendors, payments, and expenses with role-based access control (Admin vs Reception).
+Build a comprehensive Banquet Management Software (BanquetOS) for banquet hall owners. **PIVOTED to Multi-Tenant SaaS Platform** in January 2026 to allow multiple banquet businesses to use the same platform with isolated data and configurable feature plans.
 
 ## Core Requirements
-- **Landing Page**: Public-facing venue showcase with enquiry form
-- **Authentication**: JWT-based with Admin and Reception roles
+- **Multi-Tenancy**: Complete data isolation between organizations (tenants)
+- **Super Admin Portal**: Platform-level management of tenants and plans
+- **Feature Flags**: Plan-based and per-tenant feature controls
+- **Authentication**: JWT-based with Super Admin, Tenant Admin, Admin, Reception, Staff roles
 - **Booking Management**: Day/Night slots, double-booking prevention, GST calculations
 - **Menu Management**: Veg/Non-Veg items with custom categories
 - **Vendor Management**: Track vendor payments, outstanding balances
@@ -14,112 +16,163 @@ Build a comprehensive Banquet Management Software (BanquetOS) for banquet hall o
 
 ---
 
-## What's Been Implemented
+## Multi-Tenant SaaS Architecture (Phases A-H) - COMPLETED ✅
 
-### ✅ Core Features (Complete)
-- Landing page with venue showcase and enquiry form
-- JWT authentication with role-based access (Admin/Reception)
-- Booking system with Day/Night slots
-- Hall management
-- Menu management with custom categories
-- Customer management
-- Payment tracking with payment modes (cash/UPI/credit)
-- Calendar view with slot indicators
-- Dashboard with stats and charts
-- PDF invoice generation
+### Phase A: Landing + Auth Flow ✅
+- "Get Started" button navigates to `/login`
+- Role-based redirects after login:
+  - `super_admin` → `/superadmin`
+  - `tenant_admin/admin/reception/staff` → `/dashboard`
+- Route guards implemented: `ProtectedRoute`, `SuperAdminRoute`, `FeatureRoute`
+- Tenant suspension check blocks access for suspended tenants
 
-### ✅ Landing Page Redesign (January 12, 2026)
-- Converted to modern SaaS-style website for "BanquetOS"
-- **Hero Section**: Bold headline "Run Your Banquet Like a Pro", dashboard preview, trust indicators
-- **Features Section**: 6 feature cards (Booking, Payment Tracking, Vendor Payments, Profit Calculation, Staff Permissions, Invoices)
-- **How It Works**: 5-step visual flow (Booking → Invoice → Payment → Expense → Profit)
-- **Roles & Permissions**: Admin vs Reception role cards with feature lists
-- **Final CTA**: Gradient CTA section with "Start Free Trial"
-- Clean, minimal design with violet/purple gradient theme
-- Smooth scroll animations, rounded cards, soft shadows
+### Phase B: Multi-Tenant Core ✅
+- **New Collections**: `tenants`, `plans`
+- **User Model Updates**: Added `tenant_id`, new roles (`super_admin`, `tenant_admin`)
+- **Data Isolation**: All business collections have `tenant_id` field
+- **Database Indexes**: Created on `tenant_id` for all collections
+- **JWT Enhancement**: Token now includes `tenant_id` claim
 
-### ✅ Advanced Features (January 12, 2026)
-1. **Expenses Module - Booking Lock Flow**
-   - Lock booking selection to prevent accidental changes
-   - Show booking details (ID, Customer, Date, Amount) when locked
-   - Inline expense entry with category, amount, notes
-   - "Unsaved Expenses" list with batch "Save All" functionality
-   - No page reload required when adding multiple expenses
+### Phase C: Feature Flags + Plans ✅
+- **Feature Flags**: bookings, calendar, halls, menu, customers, payments, enquiries, reports, vendors, analytics, notifications, expenses, party_planning
+- **Feature Resolution**: Plan features → Tenant overrides → Effective features
+- **API Enforcement**: `check_feature_access()` middleware
+- **Sidebar Filtering**: `DashboardLayout` hides disabled features
 
-2. **Menu Categories**
-   - "Add Category" button on Menu page
-   - Create custom categories (e.g., "Punjabi Special", "Chinese")
-   - Categories reusable across menu items
-   - Delete custom categories
+### Phase D: Super Admin Portal ✅
+- **Dashboard** (`/superadmin`): Stats cards (tenants, users, plans)
+- **Tenants Page** (`/superadmin/tenants`): List, search, filter, CRUD operations
+- **Plans Page** (`/superadmin/plans`): Feature configuration, plan CRUD
+- **Tenant Detail** (`/superadmin/tenants/:id`): Full tenant management
 
-3. **Vendor Payments - Advanced**
-   - "Add Payable" to add payable amount to vendor
-   - "Record Payment" with:
-     - Payment type: Advance, Partial, Final
-     - Payment mode: Cash, UPI, Credit Card
-   - Vendor Ledger table showing:
-     - Vendor name, Type, Phone
-     - Parties linked count
-     - Total Payable, Total Paid, Outstanding
-     - Status (Cleared/Partial/Pending)
-   - Auto-calculated outstanding balances
+### Phase E: Super Admin User Management ✅
+- List users per tenant
+- Create new users for tenant
+- Update user details (name, email, phone, role)
+- Enable/Disable user accounts
+- Reset user passwords
+- Delete users
 
-4. **Outstanding Balances Tab**
-   - Vendors with dues sorted by outstanding amount
-   - Summary: Total Outstanding, Vendors with Dues, Cleared Vendors
+### Phase F: Party Planning ✅
+- Already implemented as tenant-aware
+- Works with booking_id and tenant isolation
+
+### Phase G: Advanced SaaS Foundations ✅
+- **Audit Logs**: Track all entity changes with user/timestamp
+- **Soft Delete**: `is_deleted` flag on bookings/customers with restore capability
+- **Booking Conflict Prevention**: `check_booking_conflict()` function
+- **Permission Matrix**: Role-based permissions for all operations
+- **CSV Export**: `/api/export/bookings`, `/api/export/customers`, `/api/export/payments`
+- **Standardized Errors**: Consistent HTTP error codes and messages
+
+### Phase H: Seed & Migration ✅
+- **Seed Script**: Creates super_admin, 3 plans (Basic/Pro/Enterprise), demo tenant
+- **Data Migration**: `/api/superadmin/migrate-data` endpoint
+- **Demo Tenant**: "Tamasha Banquet" with Enterprise plan
+
+---
+
+## Plans Configuration
+
+| Plan | Features Enabled |
+|------|------------------|
+| **Basic** | bookings, calendar, halls, menu, customers, payments, enquiries |
+| **Pro** | All Basic + reports, vendors, analytics, expenses |
+| **Enterprise** | All features including notifications, party_planning |
+
+---
+
+## API Endpoints (New for Multi-Tenant)
+
+### Super Admin APIs
+- `GET /api/superadmin/stats` - Platform statistics
+- `GET/POST /api/superadmin/tenants` - List/Create tenants
+- `GET/PUT/DELETE /api/superadmin/tenants/:id` - Tenant CRUD
+- `GET/POST /api/superadmin/plans` - List/Create plans
+- `GET/PUT/DELETE /api/superadmin/plans/:id` - Plan CRUD
+- `GET/POST /api/superadmin/tenants/:id/users` - Tenant user management
+- `PUT/DELETE /api/superadmin/tenants/:id/users/:userId` - User CRUD
+- `POST /api/superadmin/migrate-data` - Migrate orphan data to tenant
+
+### Enhanced Auth APIs
+- `POST /api/auth/login` - Returns `effective_features` in response
+- `GET /api/auth/me` - Returns full user profile with features
+
+### Export APIs
+- `GET /api/export/bookings` - CSV export with date filters
+- `GET /api/export/customers` - CSV export
+- `GET /api/export/payments` - CSV export with date filters
+
+### Audit & Recovery
+- `GET /api/audit-logs` - Query audit trail
+- `GET /api/bookings/deleted` - List soft-deleted bookings
+- `POST /api/bookings/:id/restore` - Restore deleted booking
+
+---
+
+## Test Credentials
+
+| Role | Email | Password |
+|------|-------|----------|
+| Super Admin | superadmin@banquetos.com | superadmin123 |
+| Tenant Admin | admin@mayurbanquet.com | admin123 |
+| Reception | reception@mayurbanquet.com | reception123 |
 
 ---
 
 ## Tech Stack
-- **Backend**: FastAPI, MongoDB (motor), Pydantic, JWT, bcrypt
-- **Frontend**: React, React Router, Tailwind CSS, Shadcn UI, Framer Motion
+- **Frontend**: React 18, React Router 6, Tailwind CSS, Shadcn UI, Framer Motion
+- **Backend**: FastAPI, Motor (MongoDB async), Pydantic v2, JWT
 - **Database**: MongoDB
-
-## API Endpoints
-- `/api/auth/*` - Authentication (login, register, me)
-- `/api/bookings/*` - Booking CRUD
-- `/api/halls/*` - Hall management
-- `/api/menu/*` - Menu items
-- `/api/menu-categories/*` - Menu categories (NEW)
-- `/api/customers/*` - Customer management
-- `/api/payments/*` - Payment recording
-- `/api/party-expenses/*` - Party expenses (Admin only)
-- `/api/vendor-payments/*` - Vendor payments
-- `/api/vendor-balance-sheet` - Vendor ledger
-- `/api/vendors/*` - Vendor CRUD
-- `/api/dashboard/*` - Dashboard stats
-- `/api/calendar` - Calendar events
-- `/api/enquiries/*` - Public enquiries
-
-## Data Models
-- **Users**: id, name, email, phone, role (admin/reception)
-- **Bookings**: booking_number, customer_id, hall_id, event_date, slot (day/night), guest_count, menu_items, addons, charges, GST, payments
-- **MenuItems**: name, category, menu_type (veg/non_veg), price_per_plate, is_addon
-- **MenuCategories**: name, description (NEW)
-- **Vendors**: name, vendor_type, phone, total_payable, total_paid, outstanding_balance
-- **VendorPayments**: vendor_id, booking_id, amount, payment_mode, description
-- **PartyExpenses**: booking_id, expense_name, amount, notes
-
-## Credentials
-- **Admin**: admin@mayurbanquet.com / admin123
-- **Reception**: reception@mayurbanquet.com / reception123
+- **PDF**: ReportLab
 
 ---
 
-## Pending/Backlog
+## File Structure
+```
+/app/
+├── backend/
+│   ├── server.py          # FastAPI app with all routes (~3500 lines)
+│   ├── requirements.txt
+│   └── .env
+├── frontend/
+│   ├── src/
+│   │   ├── App.js                    # Route guards & routing
+│   │   ├── context/AuthContext.js    # Auth state with features
+│   │   ├── lib/api.js                # API clients including superAdminAPI
+│   │   ├── components/
+│   │   │   ├── DashboardLayout.jsx   # Tenant dashboard layout
+│   │   │   └── SuperAdminLayout.jsx  # Super admin layout
+│   │   └── pages/
+│   │       └── superadmin/
+│   │           ├── SuperAdminDashboard.jsx
+│   │           ├── TenantsPage.jsx
+│   │           ├── TenantDetailPage.jsx
+│   │           └── PlansPage.jsx
+│   └── package.json
+└── test_reports/
+    └── iteration_4.json    # Latest test report (100% pass)
+```
 
-### P1 - High Priority
-- WhatsApp/SMS notification integration
-- Export to PDF/Excel for vendor ledgers and reports
+---
 
-### P2 - Future
-- Customer Login Portal
-- Google Calendar sync for bookings
-- Multi-language support (English/Punjabi)
+## Remaining/Future Work
 
-### Refactoring Needed
-- Split `/app/backend/server.py` into separate route files for maintainability:
-  - `routes/bookings.py`
-  - `routes/vendors.py`
-  - `routes/expenses.py`
-  - `routes/menu.py`
+### P0 - None (All phases complete)
+
+### P1 - Nice to Have
+- [ ] Tenant onboarding wizard
+- [ ] Email notifications for tenant invites
+- [ ] Usage analytics per tenant
+- [ ] Plan upgrade/downgrade flow
+
+### P2 - Backlog
+- [ ] WhatsApp notifications integration
+- [ ] Custom branding per tenant
+- [ ] API rate limiting
+- [ ] Tenant data export for compliance
+
+---
+
+*Last Updated: February 2, 2026*
+*Test Status: 100% Pass (Backend: 17/17, Frontend: All features working)*
