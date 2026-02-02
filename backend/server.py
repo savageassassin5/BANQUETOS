@@ -2826,6 +2826,235 @@ async def send_notification(booking_id: str, notification_type: str, current_use
     
     return {"message": "Notification sent", "log_id": log.id}
 
+# ==================== SUPER ADMIN ROUTES ====================
+# Stats
+@api_router.get("/superadmin/stats")
+async def get_superadmin_stats(current_user: dict = Depends(get_current_user)):
+    require_super_admin(current_user)
+    
+    total_tenants = await db.tenants.count_documents({})
+    active_tenants = await db.tenants.count_documents({"status": "active"})
+    total_users = await db.users.count_documents({"role": {"$ne": "super_admin"}})
+    total_plans = await db.plans.count_documents({})
+    
+    return {
+        "total_tenants": total_tenants,
+        "active_tenants": active_tenants,
+        "total_users": total_users,
+        "total_plans": total_plans
+    }
+
+# Plans CRUD
+@api_router.get("/superadmin/plans")
+async def get_plans(current_user: dict = Depends(get_current_user)):
+    require_super_admin(current_user)
+    plans = await db.plans.find({}, {"_id": 0}).to_list(100)
+    # Add tenant count to each plan
+    for plan in plans:
+        plan['tenant_count'] = await db.tenants.count_documents({"plan_id": plan['id']})
+    return plans
+
+@api_router.get("/superadmin/plans/{plan_id}")
+async def get_plan(plan_id: str, current_user: dict = Depends(get_current_user)):
+    require_super_admin(current_user)
+    plan = await db.plans.find_one({"id": plan_id}, {"_id": 0})
+    if not plan:
+        raise HTTPException(status_code=404, detail="Plan not found")
+    return plan
+
+@api_router.post("/superadmin/plans")
+async def create_plan(plan_data: PlanCreate, current_user: dict = Depends(get_current_user)):
+    require_super_admin(current_user)
+    
+    plan = Plan(**plan_data.model_dump())
+    plan_doc = plan.model_dump()
+    plan_doc['created_at'] = plan_doc['created_at'].isoformat()
+    await db.plans.insert_one(plan_doc)
+    plan_doc.pop('_id', None)
+    return plan_doc
+
+@api_router.put("/superadmin/plans/{plan_id}")
+async def update_plan(plan_id: str, plan_data: PlanCreate, current_user: dict = Depends(get_current_user)):
+    require_super_admin(current_user)
+    
+    result = await db.plans.update_one(
+        {"id": plan_id},
+        {"$set": plan_data.model_dump()}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Plan not found")
+    
+    plan = await db.plans.find_one({"id": plan_id}, {"_id": 0})
+    return plan
+
+@api_router.delete("/superadmin/plans/{plan_id}")
+async def delete_plan(plan_id: str, current_user: dict = Depends(get_current_user)):
+    require_super_admin(current_user)
+    
+    # Check if any tenants are using this plan
+    tenant_count = await db.tenants.count_documents({"plan_id": plan_id})
+    if tenant_count > 0:
+        raise HTTPException(status_code=400, detail=f"Cannot delete plan with {tenant_count} tenant(s) using it")
+    
+    result = await db.plans.delete_one({"id": plan_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Plan not found")
+    return {"message": "Plan deleted"}
+
+# Tenants CRUD
+@api_router.get("/superadmin/tenants")
+async def get_tenants(current_user: dict = Depends(get_current_user)):
+    require_super_admin(current_user)
+    tenants = await db.tenants.find({}, {"_id": 0}).to_list(500)
+    # Add user count to each tenant
+    for tenant in tenants:
+        tenant['user_count'] = await db.users.count_documents({"tenant_id": tenant['id']})
+    return tenants
+
+@api_router.get("/superadmin/tenants/{tenant_id}")
+async def get_tenant(tenant_id: str, current_user: dict = Depends(get_current_user)):
+    require_super_admin(current_user)
+    tenant = await db.tenants.find_one({"id": tenant_id}, {"_id": 0})
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant not found")
+    tenant['user_count'] = await db.users.count_documents({"tenant_id": tenant_id})
+    return tenant
+
+@api_router.post("/superadmin/tenants")
+async def create_tenant(tenant_data: TenantCreate, current_user: dict = Depends(get_current_user)):
+    require_super_admin(current_user)
+    
+    tenant = Tenant(**tenant_data.model_dump())
+    tenant_doc = tenant.model_dump()
+    tenant_doc['created_at'] = tenant_doc['created_at'].isoformat()
+    await db.tenants.insert_one(tenant_doc)
+    tenant_doc.pop('_id', None)
+    return tenant_doc
+
+@api_router.put("/superadmin/tenants/{tenant_id}")
+async def update_tenant(tenant_id: str, tenant_data: TenantUpdate, current_user: dict = Depends(get_current_user)):
+    require_super_admin(current_user)
+    
+    update_dict = {k: v for k, v in tenant_data.model_dump().items() if v is not None}
+    if not update_dict:
+        raise HTTPException(status_code=400, detail="No data to update")
+    
+    result = await db.tenants.update_one({"id": tenant_id}, {"$set": update_dict})
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Tenant not found")
+    
+    tenant = await db.tenants.find_one({"id": tenant_id}, {"_id": 0})
+    return tenant
+
+@api_router.delete("/superadmin/tenants/{tenant_id}")
+async def delete_tenant(tenant_id: str, current_user: dict = Depends(get_current_user)):
+    require_super_admin(current_user)
+    
+    # Delete all users in tenant
+    await db.users.delete_many({"tenant_id": tenant_id})
+    
+    # Delete tenant
+    result = await db.tenants.delete_one({"id": tenant_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Tenant not found")
+    
+    return {"message": "Tenant and all associated users deleted"}
+
+# Tenant Users Management
+@api_router.get("/superadmin/tenants/{tenant_id}/users")
+async def get_tenant_users(tenant_id: str, current_user: dict = Depends(get_current_user)):
+    require_super_admin(current_user)
+    
+    # Verify tenant exists
+    tenant = await db.tenants.find_one({"id": tenant_id}, {"_id": 0})
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant not found")
+    
+    users = await db.users.find({"tenant_id": tenant_id}, {"_id": 0, "password": 0}).to_list(500)
+    return users
+
+class TenantUserCreate(BaseModel):
+    name: str
+    email: EmailStr
+    password: str
+    phone: str = ""
+    role: str = "reception"
+
+class TenantUserUpdate(BaseModel):
+    name: Optional[str] = None
+    email: Optional[EmailStr] = None
+    password: Optional[str] = None
+    phone: Optional[str] = None
+    role: Optional[str] = None
+    status: Optional[str] = None
+
+@api_router.post("/superadmin/tenants/{tenant_id}/users")
+async def create_tenant_user(tenant_id: str, user_data: TenantUserCreate, current_user: dict = Depends(get_current_user)):
+    require_super_admin(current_user)
+    
+    # Verify tenant exists
+    tenant = await db.tenants.find_one({"id": tenant_id}, {"_id": 0})
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant not found")
+    
+    # Check if email already exists
+    existing = await db.users.find_one({"email": user_data.email}, {"_id": 0})
+    if existing:
+        raise HTTPException(status_code=400, detail="Email already registered")
+    
+    user_id = str(uuid.uuid4())
+    user_doc = {
+        "id": user_id,
+        "name": user_data.name,
+        "email": user_data.email,
+        "phone": user_data.phone,
+        "role": user_data.role,
+        "tenant_id": tenant_id,
+        "status": "active",
+        "password": hash_password(user_data.password),
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.users.insert_one(user_doc)
+    user_doc.pop('_id', None)
+    user_doc.pop('password', None)
+    return user_doc
+
+@api_router.put("/superadmin/tenants/{tenant_id}/users/{user_id}")
+async def update_tenant_user(tenant_id: str, user_id: str, user_data: TenantUserUpdate, current_user: dict = Depends(get_current_user)):
+    require_super_admin(current_user)
+    
+    # Verify user exists and belongs to tenant
+    user = await db.users.find_one({"id": user_id, "tenant_id": tenant_id}, {"_id": 0})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found in this tenant")
+    
+    update_dict = {k: v for k, v in user_data.model_dump().items() if v is not None}
+    
+    # Hash password if provided
+    if 'password' in update_dict and update_dict['password']:
+        update_dict['password'] = hash_password(update_dict['password'])
+    
+    if not update_dict:
+        raise HTTPException(status_code=400, detail="No data to update")
+    
+    await db.users.update_one({"id": user_id}, {"$set": update_dict})
+    
+    updated_user = await db.users.find_one({"id": user_id}, {"_id": 0, "password": 0})
+    return updated_user
+
+@api_router.delete("/superadmin/tenants/{tenant_id}/users/{user_id}")
+async def delete_tenant_user(tenant_id: str, user_id: str, current_user: dict = Depends(get_current_user)):
+    require_super_admin(current_user)
+    
+    # Verify user exists and belongs to tenant
+    user = await db.users.find_one({"id": user_id, "tenant_id": tenant_id}, {"_id": 0})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found in this tenant")
+    
+    await db.users.delete_one({"id": user_id})
+    return {"message": "User deleted"}
+
 # ==================== SEED DATA ====================
 @api_router.post("/seed")
 async def seed_data():
