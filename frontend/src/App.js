@@ -228,6 +228,46 @@ function AppRoutes() {
           <TenantDetailPage />
         </SuperAdminRoute>
       } />
+      <Route path="/superadmin/feature-flags" element={
+        <SuperAdminRoute>
+          <FeatureFlagsPage />
+        </SuperAdminRoute>
+      } />
+      <Route path="/superadmin/workflow-rules" element={
+        <SuperAdminRoute>
+          <WorkflowRulesPage />
+        </SuperAdminRoute>
+      } />
+      <Route path="/superadmin/permissions" element={
+        <SuperAdminRoute>
+          <PermissionsPage />
+        </SuperAdminRoute>
+      } />
+      <Route path="/superadmin/templates" element={
+        <SuperAdminRoute>
+          <TemplatesPage />
+        </SuperAdminRoute>
+      } />
+      <Route path="/superadmin/custom-fields" element={
+        <SuperAdminRoute>
+          <CustomFieldsPage />
+        </SuperAdminRoute>
+      } />
+      <Route path="/superadmin/ui-controls" element={
+        <SuperAdminRoute>
+          <UIControlsPage />
+        </SuperAdminRoute>
+      } />
+      <Route path="/superadmin/financial" element={
+        <SuperAdminRoute>
+          <FinancialPage />
+        </SuperAdminRoute>
+      } />
+      <Route path="/superadmin/data-governance" element={
+        <SuperAdminRoute>
+          <DataGovernancePage />
+        </SuperAdminRoute>
+      } />
       <Route path="/superadmin/plans" element={
         <SuperAdminRoute>
           <PlansPage />
