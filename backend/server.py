@@ -3204,18 +3204,21 @@ async def seed_data():
     ]
     
     for item_data in menu_data:
+        item_data['tenant_id'] = tenant_id
         item = MenuItem(**item_data)
         item_doc = item.model_dump()
+        item_doc['tenant_id'] = tenant_id
         item_doc['created_at'] = item_doc['created_at'].isoformat()
         await db.menu_items.insert_one(item_doc)
     
-    # Create sample customer
+    # Create sample customer with tenant_id
     customer = Customer(name="Rajesh Kumar", email="rajesh@email.com", phone="9876543211", address="Rajpura, Punjab")
     customer_doc = customer.model_dump()
+    customer_doc['tenant_id'] = tenant_id
     customer_doc['created_at'] = customer_doc['created_at'].isoformat()
     await db.customers.insert_one(customer_doc)
     
-    # Create sample vendors
+    # Create sample vendors with tenant_id
     vendors_data = [
         {"name": "Sharma Decorators", "vendor_type": "decor", "phone": "9876500001", "email": "sharma.decor@email.com", "services": ["Stage Setup", "Flower Arrangements", "LED Walls"], "base_rate": 50000},
         {"name": "DJ Sunny", "vendor_type": "dj_sound", "phone": "9876500002", "email": "djsunny@email.com", "services": ["DJ", "Sound System", "Lighting"], "base_rate": 25000},
@@ -3227,14 +3230,30 @@ async def seed_data():
     for vendor_data in vendors_data:
         vendor = Vendor(**vendor_data)
         vendor_doc = vendor.model_dump()
+        vendor_doc['tenant_id'] = tenant_id
         vendor_doc['created_at'] = vendor_doc['created_at'].isoformat()
         await db.vendors.insert_one(vendor_doc)
     
+    # Create indexes for tenant_id
+    await db.halls.create_index("tenant_id")
+    await db.menu_items.create_index("tenant_id")
+    await db.customers.create_index("tenant_id")
+    await db.vendors.create_index("tenant_id")
+    await db.bookings.create_index("tenant_id")
+    await db.users.create_index("tenant_id")
+    await db.payments.create_index("tenant_id")
+    await db.expenses.create_index("tenant_id")
+    
     return {
-        "message": "Sample data seeded successfully", 
+        "message": "Multi-tenant data seeded successfully", 
         "credentials": {
+            "super_admin": {"email": "superadmin@banquetos.com", "password": "superadmin123"},
             "admin": {"email": "admin@mayurbanquet.com", "password": "admin123"},
             "reception": {"email": "reception@mayurbanquet.com", "password": "reception123"}
+        },
+        "tenant": {
+            "name": "Tamasha Banquet",
+            "id": tenant_id
         }
     }
 
