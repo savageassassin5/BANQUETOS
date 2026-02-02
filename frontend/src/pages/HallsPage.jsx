@@ -79,6 +79,8 @@ const HallsPage = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setSaving(true);
+        setSaveStatus('saving');
         try {
             if (editingHall) {
                 await hallsAPI.update(editingHall.id, form);
@@ -87,22 +89,28 @@ const HallsPage = () => {
                 await hallsAPI.create(form);
                 toast.success('Hall created');
             }
+            setSaveStatus('saved');
             loadHalls();
             setDialogOpen(false);
             resetForm();
         } catch (error) {
+            setSaveStatus('error');
             toast.error('Failed to save hall');
+        } finally {
+            setSaving(false);
         }
     };
 
     const handleDelete = async (id) => {
-        if (!window.confirm('Are you sure you want to delete this hall?')) return;
+        setDeleting(id);
         try {
             await hallsAPI.delete(id);
             toast.success('Hall deleted');
             loadHalls();
         } catch (error) {
             toast.error('Failed to delete hall');
+        } finally {
+            setDeleting(null);
         }
     };
 
