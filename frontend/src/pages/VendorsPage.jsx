@@ -293,7 +293,7 @@ const VendorsPage = () => {
             </motion.div>
 
             {/* Filters */}
-            <motion.div variants={itemVariants}>
+            <motion.div variants={itemVariants} initial="hidden" animate="visible">
                 <Card className="bg-white border-0 shadow-lg rounded-2xl">
                     <CardContent className="p-4">
                         <div className="flex flex-col md:flex-row gap-4">
