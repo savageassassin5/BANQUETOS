@@ -737,12 +737,13 @@ PERMISSION_MATRIX = {
     "tenant_admin": [
         "bookings:*", "halls:*", "menu:*", "customers:*", "payments:*",
         "enquiries:*", "reports:read", "vendors:*", "analytics:read",
-        "expenses:*", "party_planning:*", "users:read", "users:write"
+        "expenses:*", "party_planning:*", "users:read", "users:write",
+        "audit:read"
     ],
     "admin": [
         "bookings:*", "halls:*", "menu:*", "customers:*", "payments:*",
         "enquiries:*", "reports:read", "vendors:*", "analytics:read",
-        "expenses:*", "party_planning:*"
+        "expenses:*", "party_planning:*", "audit:read"
     ],
     "reception": [
         "bookings:create", "bookings:read", "bookings:update",
