@@ -3,19 +3,19 @@ import { cn } from '../../lib/utils';
 
 /**
  * Enhanced Skeleton components for BanquetOS
- * Context-aware, banquet-themed, with soft purple/neutral shimmer
+ * Dark theme with purple shimmer effect
  * Respects prefers-reduced-motion
  */
 
-// Base skeleton with shimmer animation
+// Base skeleton with dark theme shimmer animation
 export function Skeleton({ className, ...props }) {
   return (
     <div
       className={cn(
-        'relative overflow-hidden rounded-md bg-slate-100',
+        'relative overflow-hidden rounded-md bg-purple-900/40',
         'before:absolute before:inset-0 before:-translate-x-full',
         'before:animate-[shimmer_2s_infinite]',
-        'before:bg-gradient-to-r before:from-transparent before:via-purple-100/50 before:to-transparent',
+        'before:bg-gradient-to-r before:from-transparent before:via-purple-400/20 before:to-transparent',
         'motion-reduce:before:animate-none',
         className
       )}
@@ -27,7 +27,7 @@ export function Skeleton({ className, ...props }) {
 // Metric card skeleton (dashboard stats)
 export function SkeletonMetric({ className }) {
   return (
-    <div className={cn('p-6 rounded-2xl bg-slate-50 border border-slate-100', className)}>
+    <div className={cn('p-6 rounded-2xl bg-[#1e1a2e] border border-purple-800/30', className)}>
       <div className="flex items-center justify-between">
         <div className="space-y-2">
           <Skeleton className="h-3 w-24" />
@@ -46,7 +46,7 @@ export function SkeletonMetric({ className }) {
 // Event card skeleton (dashboard/booking cards)
 export function SkeletonEventCard({ className }) {
   return (
-    <div className={cn('p-5 rounded-2xl bg-white border border-slate-100 shadow-sm', className)}>
+    <div className={cn('p-5 rounded-2xl bg-[#1e1a2e] border border-purple-800/30 shadow-lg shadow-purple-900/20', className)}>
       <div className="flex items-start justify-between mb-4">
         <div className="space-y-2">
           <div className="flex gap-2">
