@@ -359,23 +359,50 @@ const HallsPage = () => {
                                 )}
 
                                 <div className="flex gap-2">
-                                    <Button 
-                                        variant="outline" 
-                                        className="flex-1"
+                                    <Button
+                                        variant="outline"
+                                        className="flex-1 hover:bg-amber-50 hover:text-amber-700 rounded-xl"
                                         onClick={() => handleEdit(hall)}
-                                        data-testid={`edit-hall-${hall.id}`}
                                     >
                                         <Edit className="h-4 w-4 mr-2" />
                                         Edit
                                     </Button>
-                                    <Button 
-                                        variant="outline" 
-                                        className="text-red-600 hover:text-red-700"
-                                        onClick={() => handleDelete(hall.id)}
-                                        data-testid={`delete-hall-${hall.id}`}
-                                    >
-                                        <Trash2 className="h-4 w-4" />
-                                    </Button>
+                                    <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                            <Button 
+                                                variant="outline" 
+                                                size="icon" 
+                                                className="hover:bg-red-50 hover:text-red-600 rounded-xl"
+                                                disabled={deleting === hall.id}
+                                            >
+                                                {deleting === hall.id ? (
+                                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                                ) : (
+                                                    <Trash2 className="h-4 w-4" />
+                                                )}
+                                            </Button>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent>
+                                            <AlertDialogHeader>
+                                                <AlertDialogTitle className="flex items-center gap-2">
+                                                    <AlertTriangle className="h-5 w-5 text-amber-500" />
+                                                    Delete Hall
+                                                </AlertDialogTitle>
+                                                <AlertDialogDescription>
+                                                    Are you sure you want to delete <strong>{hall.name}</strong>? This action cannot be undone.
+                                                </AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter>
+                                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                <AlertDialogAction
+                                                    onClick={() => handleDelete(hall.id)}
+                                                    className="bg-red-600 hover:bg-red-700"
+                                                >
+                                                    Delete
+                                                </AlertDialogAction>
+                                            </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                    </AlertDialog>
                                 </div>
                             </CardContent>
                         </Card>
