@@ -353,6 +353,9 @@ class Booking(BaseModel):
     # Party costing (expenses for this booking - admin only)
     total_expenses: float = 0
     net_profit: float = 0
+    tenant_id: Optional[str] = None
+    is_deleted: bool = False  # Soft delete
+    deleted_at: Optional[datetime] = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
