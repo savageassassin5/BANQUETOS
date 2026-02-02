@@ -536,12 +536,14 @@ const PartyPlanningPage = () => {
         if (!planForm.booking_id) return;
         
         setSaving(true);
+        setSaveStatus('saving');
         try {
             const payload = {
                 ...planForm,
                 dj_vendor_id: planForm.dj_vendor_id || null,
                 decor_vendor_id: planForm.decor_vendor_id || null,
                 catering_vendor_id: planForm.catering_vendor_id || null,
+                vendor_assignments: vendorAssignments,
                 staff_assignments: planForm.staff_assignments.map(s => ({
                     role: s.role,
                     count: parseInt(s.count) || 1,
@@ -550,21 +552,23 @@ const PartyPlanningPage = () => {
                     shift_start: s.shift_start || '',
                     shift_end: s.shift_end || '',
                     assigned_names: s.assigned_names || [],
-                    attendance: s.attendance || 'pending'
+                    attendance: s.attendance || 'pending',
+                    notes: s.notes || ''
                 }))
             };
             
             if (hasPlan) {
                 await partyPlanningAPI.update(planForm.booking_id, payload);
-                toast.success('Party plan updated');
             } else {
                 await partyPlanningAPI.create(payload);
-                toast.success('Party plan created');
             }
             
+            setSaveStatus('saved');
+            toast.success(hasPlan ? 'Party plan updated' : 'Party plan created');
             setPlanDialogOpen(false);
             loadData();
         } catch (error) {
+            setSaveStatus('error');
             toast.error(error.response?.data?.detail || 'Failed to save party plan');
         } finally {
             setSaving(false);
