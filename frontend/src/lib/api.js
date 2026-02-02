@@ -181,4 +181,30 @@ export const notificationsAPI = {
     send: (bookingId, notificationType) => api.post('/notifications/send', null, { params: { booking_id: bookingId, notification_type: notificationType } }),
 };
 
+// Super Admin API
+export const superAdminAPI = {
+    // Stats
+    getStats: () => api.get('/superadmin/stats'),
+    
+    // Tenants
+    getTenants: () => api.get('/superadmin/tenants'),
+    getTenant: (id) => api.get(`/superadmin/tenants/${id}`),
+    createTenant: (data) => api.post('/superadmin/tenants', data),
+    updateTenant: (id, data) => api.put(`/superadmin/tenants/${id}`, data),
+    deleteTenant: (id) => api.delete(`/superadmin/tenants/${id}`),
+    
+    // Plans
+    getPlans: () => api.get('/superadmin/plans'),
+    getPlan: (id) => api.get(`/superadmin/plans/${id}`),
+    createPlan: (data) => api.post('/superadmin/plans', data),
+    updatePlan: (id, data) => api.put(`/superadmin/plans/${id}`, data),
+    deletePlan: (id) => api.delete(`/superadmin/plans/${id}`),
+    
+    // Tenant Users
+    getTenantUsers: (tenantId) => api.get(`/superadmin/tenants/${tenantId}/users`),
+    createTenantUser: (tenantId, data) => api.post(`/superadmin/tenants/${tenantId}/users`, data),
+    updateTenantUser: (tenantId, userId, data) => api.put(`/superadmin/tenants/${tenantId}/users/${userId}`, data),
+    deleteTenantUser: (tenantId, userId) => api.delete(`/superadmin/tenants/${tenantId}/users/${userId}`),
+};
+
 export default api;
