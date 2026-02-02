@@ -318,11 +318,11 @@ const DashboardPage = () => {
                 </Card>
 
                 {/* Event Distribution */}
-                <Card className="bg-white shadow-lg border-0 rounded-2xl overflow-hidden">
-                    <CardHeader className="border-b border-slate-100 bg-gradient-to-r from-cyan-50 to-blue-50">
-                        <CardTitle className="font-heading text-slate-800 text-lg flex items-center gap-2">
-                            <div className="p-2 bg-cyan-100 rounded-lg">
-                                <CalendarDays className="h-4 w-4 text-cyan-600" />
+                <Card className="bg-[#1e1a2e] shadow-lg shadow-purple-900/20 border border-purple-800/30 rounded-2xl overflow-hidden">
+                    <CardHeader className="border-b border-purple-800/30 bg-purple-900/30">
+                        <CardTitle className="font-heading text-white text-lg flex items-center gap-2">
+                            <div className="p-2 bg-cyan-500/20 rounded-lg">
+                                <CalendarDays className="h-4 w-4 text-cyan-400" />
                             </div>
                             Event Distribution
                         </CardTitle>
@@ -347,13 +347,13 @@ const DashboardPage = () => {
                                                 <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                                             ))}
                                         </Pie>
-                                        <Tooltip contentStyle={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', boxShadow: '0 10px 40px rgba(0,0,0,0.1)' }} />
+                                        <Tooltip contentStyle={{ background: '#1e1a2e', border: '1px solid rgba(139, 92, 246, 0.3)', borderRadius: '12px', boxShadow: '0 10px 40px rgba(0,0,0,0.3)', color: '#fff' }} />
                                     </PieChart>
                                 </ResponsiveContainer>
                             ) : (
                                 <div className="text-center">
-                                    <CalendarDays className="h-12 w-12 text-slate-300 mx-auto mb-3" />
-                                    <p className="text-slate-400">No event data available</p>
+                                    <CalendarDays className="h-12 w-12 text-purple-700 mx-auto mb-3" />
+                                    <p className="text-purple-400/60">No event data available</p>
                                 </div>
                             )}
                         </div>
@@ -363,16 +363,16 @@ const DashboardPage = () => {
 
             {/* Recent Bookings */}
             <motion.div variants={itemVariants}>
-                <Card className="bg-white shadow-lg border-0 rounded-2xl overflow-hidden">
-                    <CardHeader className="flex flex-row items-center justify-between border-b border-slate-100 bg-gradient-to-r from-indigo-50 to-purple-50">
-                        <CardTitle className="font-heading text-slate-800 text-lg flex items-center gap-2">
-                            <div className="p-2 bg-indigo-100 rounded-lg">
-                                <CalendarDays className="h-4 w-4 text-indigo-600" />
+                <Card className="bg-[#1e1a2e] shadow-lg shadow-purple-900/20 border border-purple-800/30 rounded-2xl overflow-hidden">
+                    <CardHeader className="flex flex-row items-center justify-between border-b border-purple-800/30 bg-purple-900/30">
+                        <CardTitle className="font-heading text-white text-lg flex items-center gap-2">
+                            <div className="p-2 bg-indigo-500/20 rounded-lg">
+                                <CalendarDays className="h-4 w-4 text-indigo-400" />
                             </div>
                             Recent Bookings
                         </CardTitle>
                         <Link to="/dashboard/bookings">
-                            <Button variant="ghost" size="sm" className="text-purple-600 hover:text-purple-700 hover:bg-purple-50 rounded-xl">
+                            <Button variant="ghost" size="sm" className="text-purple-400 hover:text-purple-300 hover:bg-purple-500/20 rounded-xl">
                                 View All <ArrowUpRight className="ml-1 h-4 w-4" />
                             </Button>
                         </Link>
@@ -381,15 +381,15 @@ const DashboardPage = () => {
                         <div className="overflow-x-auto">
                             <table className="w-full">
                                 <thead>
-                                    <tr className="border-b border-slate-100 bg-slate-50/50">
-                                        <th className="text-left py-4 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider">Booking #</th>
-                                        <th className="text-left py-4 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider">Client</th>
-                                        <th className="text-left py-4 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider">Event</th>
-                                        <th className="text-left py-4 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider">Date</th>
-                                        <th className="text-left py-4 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider">Total</th>
-                                        <th className="text-left py-4 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider">Paid</th>
-                                        <th className="text-left py-4 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider">Due</th>
-                                        <th className="text-left py-4 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</th>
+                                    <tr className="border-b border-purple-800/30 bg-purple-900/20">
+                                        <th className="text-left py-4 px-6 text-xs font-semibold text-purple-300/60 uppercase tracking-wider">Booking #</th>
+                                        <th className="text-left py-4 px-6 text-xs font-semibold text-purple-300/60 uppercase tracking-wider">Client</th>
+                                        <th className="text-left py-4 px-6 text-xs font-semibold text-purple-300/60 uppercase tracking-wider">Event</th>
+                                        <th className="text-left py-4 px-6 text-xs font-semibold text-purple-300/60 uppercase tracking-wider">Date</th>
+                                        <th className="text-left py-4 px-6 text-xs font-semibold text-purple-300/60 uppercase tracking-wider">Total</th>
+                                        <th className="text-left py-4 px-6 text-xs font-semibold text-purple-300/60 uppercase tracking-wider">Paid</th>
+                                        <th className="text-left py-4 px-6 text-xs font-semibold text-purple-300/60 uppercase tracking-wider">Due</th>
+                                        <th className="text-left py-4 px-6 text-xs font-semibold text-purple-300/60 uppercase tracking-wider">Status</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -397,7 +397,7 @@ const DashboardPage = () => {
                                         stats.recent_bookings.map((booking, idx) => (
                                             <motion.tr 
                                                 key={booking.id} 
-                                                className="border-b border-slate-100 last:border-0 hover:bg-purple-50/50 transition-colors"
+                                                className="border-b border-purple-800/20 last:border-0 hover:bg-purple-900/30 transition-colors"
                                                 initial={{ opacity: 0, x: -20 }}
                                                 animate={{ opacity: 1, x: 0 }}
                                                 transition={{ delay: idx * 0.1 }}
