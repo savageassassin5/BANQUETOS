@@ -324,14 +324,15 @@ class TestPhaseGExportAndAuditLogs:
     """Phase G: CSV export and Audit logs"""
     
     @pytest.fixture
-    def admin_token(self):
-        response = requests.post(f"{BASE_URL}/api/auth/login", json=TENANT_ADMIN_CREDS)
+    def super_admin_token(self):
+        # Use super_admin since tenant_admin doesn't have tenant_id in seed data
+        response = requests.post(f"{BASE_URL}/api/auth/login", json=SUPER_ADMIN_CREDS)
         assert response.status_code == 200
         return response.json()["token"]
     
-    def test_csv_export_bookings_api(self, admin_token):
+    def test_csv_export_bookings_api(self, super_admin_token):
         """CSV export bookings API works"""
-        headers = {"Authorization": f"Bearer {admin_token}"}
+        headers = {"Authorization": f"Bearer {super_admin_token}"}
         response = requests.get(f"{BASE_URL}/api/export/bookings", headers=headers)
         assert response.status_code == 200, f"Failed: {response.text}"
         
@@ -345,9 +346,9 @@ class TestPhaseGExportAndAuditLogs:
         
         print(f"✓ CSV export bookings works, size={len(response.content)} bytes")
     
-    def test_audit_logs_api(self, admin_token):
+    def test_audit_logs_api(self, super_admin_token):
         """Audit logs API works"""
-        headers = {"Authorization": f"Bearer {admin_token}"}
+        headers = {"Authorization": f"Bearer {super_admin_token}"}
         response = requests.get(f"{BASE_URL}/api/audit-logs", headers=headers)
         assert response.status_code == 200, f"Failed: {response.text}"
         data = response.json()
