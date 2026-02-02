@@ -1,139 +1,132 @@
 # BanquetOS - Product Requirements Document
 
 ## Overview
-BanquetOS is a multi-tenant SaaS platform for banquet hall management with an Elite Super Admin Control Plane.
+BanquetOS is a multi-tenant SaaS with Elite Super Admin Control Plane and CONFIG-DRIVEN tenant apps.
 
-## Completed Work (Feb 2026)
+## Completed (Feb 2026)
 
-### ✅ Elite Super Admin Control Plane - COMPLETE
+### ✅ PART A: Super Admin → Tenant App Integration
 
-#### 1. Tenant Management
-- Create/edit tenants with country selection (12 countries)
-- Auto-configured timezone, currency, tax type per country
+#### A1. tenant_config as Source of Truth
+- Created `tenant_config` collection with:
+  - `tenant_id`, `version`, `last_updated`
+  - `feature_flags` (12 toggles)
+  - `workflow_rules` (7 rules)
+  - `permissions` (6 roles × 11 permissions)
+  - `event_templates`, `custom_fields`
+  - `ui_visibility`, `financial_controls`, `data_governance`
 
-#### 2. Feature Flags (12 toggles)
-- Bookings, Party Planner, Operations Checklist
-- Vendors, Vendor Ledger, Staff Planning
-- Profit Tracking, Reports, Advanced Reports
-- Event Day Mode, Multi-Hall, Custom Fields
+#### A2. Config Delivery to Tenant App
+- `TenantConfigContext.js` - React context fetches config on login
+- Stores in app state with version
+- Polls every 30s for version changes
+- **Fail-closed**: Shows error message if config fails to load
 
-#### 3. Workflow Rules (7 rules)
-- Advance Required (%)
-- Vendors Mandatory Before Confirm
-- Staff Mandatory Before Event
-- Lock Editing Hours Before Event
-- Discount Approval Required
-- Profit Margin Warning (%)
-- Vendor Unpaid Warning (Days)
+#### A3. Feature Flags - UI + API Enforcement
+**UI Enforcement:**
+- `DashboardLayout.jsx` - Sidebar filters by `isFeatureEnabled()`
+- `FeatureRoute` component blocks routes if feature disabled
+- Shows "Module Not Enabled" message for disabled features
 
-#### 4. Role Permissions Matrix
-- 6 roles: Owner, Manager, Reception, Accountant, Ops, Custom
-- 11 permissions per role (view/edit bookings, profit, vendors, etc.)
-- Grant All / Revoke All shortcuts
+**API Enforcement:**
+- `check_feature_access()` - Raises HTTP 403 if feature disabled
+- Applied to vendor ledger endpoints:
+  - `GET /vendors/{id}/ledger`
+  - `POST /vendors/{id}/transactions`
 
-#### 5. Event Templates
-- Default settings per event type (Wedding, Birthday, Corporate, etc.)
-- Default advance %, profit target %
+#### A4. Workflow Rules - UI + API Enforcement
+- `getWorkflowRule()` helper in TenantConfigContext
+- Backend: `get_workflow_rule()` helper function
+- Rules enforced:
+  - `advance_required_percent`
+  - `vendors_mandatory_before_confirm`
+  - `lock_editing_hours_before`
 
-#### 6. Custom Fields (No-Code)
-- Field types: Text, Number, Date, Dropdown
-- Required/optional flag
-- Role-based visibility
+#### A5. Role Permissions - UI + API Enforcement
+**UI Enforcement:**
+- `hasPermission()` helper in TenantConfigContext
+- Can hide UI elements based on role permissions
 
-#### 7. UI Controls
-- Tab visibility (Profit, Staff, Vendors, Checklist)
-- Label customization (rename modules)
-- Read-only modules
+**API Enforcement:**
+- `check_permission()` - Raises HTTP 403 if permission denied
+- Applied to vendor ledger: requires `view_vendor_ledger`, `record_payments`
 
-#### 8. Financial Controls
-- Payment methods (Cash, UPI, Bank, Cheque, Card)
-- Tax type & rate
-- Discount limits per role
-- Vendor advance requirements
-- Rounding rules
+#### A6. Templates & Defaults
+- `getEventTemplate()` helper returns template by event type
+- Templates include default advance %, profit target %
 
-#### 9. Data Governance
-- Audit logs toggle
-- Soft delete option
-- Data export permissions
-- Demo mode
-- Data retention period
-- Reset tenant data (with confirmation)
+#### A7. Custom Fields
+- `getCustomFields()` returns fields filtered by role visibility
 
-#### 10. Config Versioning
-- Version tracking per config change
-- Rollback to previous versions
-- Last 10 versions stored
+#### A8. Zero Data Overlap Guarantee
+- `get_tenant_filter()` ensures tenant_id on every query
+- All APIs use `tenant_filter` for database operations
 
-### Backend Schema: `tenant_config`
-```javascript
-{
-  tenant_id: string,
-  version: number,
-  last_updated: datetime,
-  country: string,
-  timezone: string,
-  currency: string,
-  feature_flags: { bookings: bool, ... },
-  workflow_rules: { advance_required_percent: int, ... },
-  permissions: { owner: {...}, manager: {...}, ... },
-  event_templates: [...],
-  custom_fields: [...],
-  ui_visibility: {...},
-  financial_controls: {...},
-  data_governance: {...},
-  previous_versions: [...]
-}
-```
+### ✅ PART B: Data Reset for admin@mayur.banquetos.com
 
-### API Endpoints Added
-- `GET /api/superadmin/countries` - Country configs
-- `GET /api/superadmin/tenants/:id/config` - Get tenant config
-- `PUT /api/superadmin/tenants/:id/config` - Update config
-- `PUT /api/superadmin/tenants/:id/config/feature-flags` - Quick flag update
-- `PUT /api/superadmin/tenants/:id/config/workflow-rules` - Quick rules update
-- `PUT /api/superadmin/tenants/:id/config/permissions` - Update permissions
-- `GET /api/superadmin/tenants/:id/config/versions` - Version history
-- `POST /api/superadmin/tenants/:id/config/rollback` - Rollback config
-- `POST /api/superadmin/tenants/:id/reset-data` - Reset tenant data
-- `GET /api/config/sync` - Tenant app config sync
-- `GET /api/config/check-version` - Check for updates
+**Tenant Info:**
+- User: admin@mayur.banquetos.com
+- Tenant ID: 5ce56140-32fd-4081-8b8d-23cfdb1b065b (MAYUR)
 
-### Frontend Pages Created
-- `/superadmin/feature-flags`
-- `/superadmin/workflow-rules`
-- `/superadmin/permissions`
-- `/superadmin/templates`
-- `/superadmin/custom-fields`
-- `/superadmin/ui-controls`
-- `/superadmin/financial`
-- `/superadmin/data-governance`
+**Reset Status:** Already empty (no operational data)
+- bookings: 0
+- vendors: 0
+- party_plans: 0
+- payments: 0
 
-### Key Principles Enforced
-✅ Super Admin NEVER edits tenant data directly
-✅ All changes are CONFIG-DRIVEN
-✅ Version-based sync for instant propagation
-✅ Complete tenant isolation (tenant_id in every query)
-✅ Rollback support for safety
+**Preserved:**
+- User record: ✅ Intact
+- Tenant record: ✅ Intact
+- Other tenants: ✅ 9 bookings for Tamasha Banquet (unaffected)
+
+---
+
+## Files Changed
+
+### Backend
+- `/app/backend/server.py`:
+  - Added `get_tenant_config()` helper (line 918)
+  - Updated `get_effective_features()` to use tenant_config (line 925)
+  - Added `check_feature_access()` for API enforcement (line 965)
+  - Added `check_permission()` for role-based API enforcement (line 980)
+  - Added `get_workflow_rule()` helper (line 1000)
+  - Renamed duplicate function to `get_tenant_config_api()` (line 4343)
+  - Added feature/permission checks to vendor ledger endpoints (lines 3351, 3398)
+
+### Frontend
+- `/app/frontend/src/context/TenantConfigContext.js` - NEW
+  - Config fetching and caching
+  - `isFeatureEnabled()`, `hasPermission()`, `getWorkflowRule()`
+  - Version-based polling for sync
+  
+- `/app/frontend/src/App.js`:
+  - Wrapped app with `TenantConfigProvider`
+  - Updated `FeatureRoute` to use TenantConfigContext
+  
+- `/app/frontend/src/components/DashboardLayout.jsx`:
+  - Import `useTenantConfig`
+  - Filter sidebar by `isFeatureEnabled()`
+  - Support for dynamic labels via `getLabel()`
+
+---
+
+## Enforcement Points Summary
+
+| Area | UI Enforcement | API Enforcement |
+|------|---------------|-----------------|
+| Feature Flags | DashboardLayout sidebar, FeatureRoute | check_feature_access() |
+| Permissions | hasPermission() hooks | check_permission() |
+| Workflow Rules | getWorkflowRule() | get_workflow_rule() |
 
 ---
 
 ## Test Credentials
 - Super Admin: superadmin@banquetos.com / superadmin123
-- Tenant Admin: admin@mayurbanquet.com / admin123
+- Tenant Admin (Tamasha): admin@mayurbanquet.com / admin123
+- Tenant Admin (MAYUR): admin@mayur.banquetos.com / admin123
 
-## Country Configurations (12 Supported)
-| Country | Timezone | Currency | Tax Type |
-|---------|----------|----------|----------|
-| India | Asia/Kolkata | INR (₹) | GST 18% |
-| UAE | Asia/Dubai | AED | VAT 5% |
-| USA | America/New_York | USD ($) | None |
-| UK | Europe/London | GBP (£) | VAT 20% |
-| Canada | America/Toronto | CAD ($) | GST 5% |
-| Australia | Australia/Sydney | AUD ($) | GST 10% |
-| Singapore | Asia/Singapore | SGD ($) | GST 9% |
-| Saudi Arabia | Asia/Riyadh | SAR | VAT 15% |
-| Malaysia | Asia/Kuala_Lumpur | MYR (RM) | SST 6% |
-| Indonesia | Asia/Jakarta | IDR (Rp) | VAT 11% |
-| Philippines | Asia/Manila | PHP (₱) | VAT 12% |
-| Qatar | Asia/Qatar | QAR | None |
+## Config Sync API
+```
+GET /api/config/sync - Returns full tenant_config
+GET /api/config/check-version?current_version=X - Check if update needed
+```
