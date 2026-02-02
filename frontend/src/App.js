@@ -373,8 +373,10 @@ function App() {
     <div className="App">
       <BrowserRouter>
         <AuthProvider>
-          <AppRoutes />
-          <Toaster position="top-right" richColors />
+          <TenantConfigProvider>
+            <AppRoutes />
+            <Toaster position="top-right" richColors />
+          </TenantConfigProvider>
         </AuthProvider>
       </BrowserRouter>
     </div>
