@@ -541,6 +541,63 @@ class VendorAssignment(BaseModel):
     payment_status: VendorPaymentStatus = VendorPaymentStatus.PENDING
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
+# ==================== ELITE VENDOR TRANSACTION MODELS ====================
+class TransactionType(str, Enum):
+    DEBIT = "debit"      # Money owed TO vendor (you owe them)
+    CREDIT = "credit"    # Money owed BY vendor (they owe you / refund / adjustment)
+    PAYMENT = "payment"  # Payment made to vendor
+
+class VendorTransactionCreate(BaseModel):
+    vendor_id: str
+    booking_id: Optional[str] = None
+    transaction_type: TransactionType
+    amount: float
+    payment_method: Optional[str] = None  # Cash, UPI, Bank Transfer, Cheque, Card
+    reference_id: Optional[str] = None    # Cheque no, UTR, etc.
+    transaction_date: str = ""            # YYYY-MM-DD
+    note: str = ""
+
+class VendorTransaction(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    tenant_id: Optional[str] = None
+    vendor_id: str
+    booking_id: Optional[str] = None
+    transaction_type: TransactionType
+    amount: float
+    payment_method: Optional[str] = None
+    reference_id: Optional[str] = None
+    transaction_date: str = ""
+    note: str = ""
+    created_by: Optional[str] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class BookingVendorCreate(BaseModel):
+    booking_id: str
+    vendor_id: str
+    category_snapshot: str = ""           # Category at time of assignment
+    agreed_amount: float = 0
+    tax: float = 0
+    advance_expected: float = 0
+    status: str = "assigned"              # assigned, confirmed, completed, cancelled
+    notes: str = ""
+
+class BookingVendor(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    tenant_id: Optional[str] = None
+    booking_id: str
+    vendor_id: str
+    category_snapshot: str = ""
+    agreed_amount: float = 0
+    tax: float = 0
+    advance_expected: float = 0
+    amount_paid: float = 0
+    balance_due: float = 0
+    status: str = "assigned"
+    notes: str = ""
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
 # ==================== EXPENSE MODELS ====================
 class ExpenseCategory(str, Enum):
     DECOR = "decor"
