@@ -225,6 +225,25 @@ export const superAdminAPI = {
     createTenantUser: (tenantId, data) => api.post(`/superadmin/tenants/${tenantId}/users`, data),
     updateTenantUser: (tenantId, userId, data) => api.put(`/superadmin/tenants/${tenantId}/users/${userId}`, data),
     deleteTenantUser: (tenantId, userId) => api.delete(`/superadmin/tenants/${tenantId}/users/${userId}`),
+    
+    // Country configs
+    getCountries: () => api.get('/superadmin/countries'),
+    
+    // Tenant Config
+    getTenantConfig: (tenantId) => api.get(`/superadmin/tenants/${tenantId}/config`),
+    updateTenantConfig: (tenantId, data) => api.put(`/superadmin/tenants/${tenantId}/config`, data),
+    updateFeatureFlags: (tenantId, flags) => api.put(`/superadmin/tenants/${tenantId}/config/feature-flags`, flags),
+    updateWorkflowRules: (tenantId, rules) => api.put(`/superadmin/tenants/${tenantId}/config/workflow-rules`, rules),
+    updatePermissions: (tenantId, permissions) => api.put(`/superadmin/tenants/${tenantId}/config/permissions`, permissions),
+    getConfigVersions: (tenantId) => api.get(`/superadmin/tenants/${tenantId}/config/versions`),
+    rollbackConfig: (tenantId, version) => api.post(`/superadmin/tenants/${tenantId}/config/rollback`, null, { params: { version } }),
+    resetTenantData: (tenantId) => api.post(`/superadmin/tenants/${tenantId}/reset-data`, null, { params: { confirm: true } }),
+};
+
+// Config sync for tenant apps
+export const configAPI = {
+    sync: () => api.get('/config/sync'),
+    checkVersion: (currentVersion) => api.get('/config/check-version', { params: { current_version: currentVersion } }),
 };
 
 export default api;
