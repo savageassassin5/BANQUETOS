@@ -114,8 +114,40 @@ const TenantsPage = () => {
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center h-96">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-violet-500" />
+            <div className="space-y-6">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                    <div>
+                        <Skeleton className="h-9 w-32 mb-2 bg-slate-700" />
+                        <Skeleton className="h-4 w-48 bg-slate-700" />
+                    </div>
+                    <Skeleton className="h-10 w-32 rounded-lg bg-slate-700" />
+                </div>
+                <div className="flex gap-4">
+                    <Skeleton className="h-10 flex-1 rounded-lg bg-slate-700" />
+                    <Skeleton className="h-10 w-40 rounded-lg bg-slate-700" />
+                </div>
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {Array.from({ length: 6 }).map((_, i) => (
+                        <div key={i} className="bg-slate-800/50 border border-slate-700 rounded-2xl p-6 space-y-4">
+                            <div className="flex items-start justify-between">
+                                <div className="flex items-center gap-3">
+                                    <Skeleton className="h-12 w-12 rounded-xl bg-slate-700" />
+                                    <div className="space-y-2">
+                                        <Skeleton className="h-5 w-32 bg-slate-700" />
+                                        <Skeleton className="h-3 w-24 bg-slate-700" />
+                                    </div>
+                                </div>
+                                <Skeleton className="h-6 w-16 rounded-full bg-slate-700" />
+                            </div>
+                            <Skeleton className="h-8 w-full rounded-lg bg-slate-700" />
+                            <div className="pt-4 border-t border-slate-700 grid grid-cols-3 gap-4">
+                                <Skeleton className="h-10 w-full bg-slate-700" />
+                                <Skeleton className="h-10 w-full bg-slate-700" />
+                                <Skeleton className="h-10 w-full bg-slate-700" />
+                            </div>
+                        </div>
+                    ))}
+                </div>
             </div>
         );
     }
