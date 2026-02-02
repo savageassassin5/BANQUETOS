@@ -10,110 +10,115 @@ BanquetOS is a multi-tenant SaaS platform for banquet hall management with intel
 4. Feature Flag System
 5. Party Planning with booking-driven workflow
 
-## Recent Enhancements (Completed Dec 2025)
+## Recent Work (Feb 2026)
 
-### Admin Panel UI/UX Polish - World-Class Upgrade
+### Fixed: Vendors Page Blank Screen Issue
+**Root Cause:** Framer Motion animations were stuck at initial `hidden` state (opacity: 0) because variant inheritance wasn't propagating correctly.
 
-#### Global UI Behaviors (Applied Everywhere)
-1. **State-Driven UI**
-   - StatusBadge component for: Bookings (Draft/Confirmed/Completed/Cancelled), Payments (Pending/Partial/Paid/Overdue), Vendors (Invited/Confirmed/Arrived/Paid), Staff (Pending/Confirmed/Absent)
-   - Color-safe badges with icons, always visible near entity titles
+**Solution:** Added explicit `initial="hidden"` and `animate="visible"` props to all motion.div elements in VendorsPage.jsx.
 
-2. **Save/Load Confidence**
-   - SaveFeedback component showing "Saving..." → "Saved ✓" states
-   - useSaveState hook for auto-reset after 2s
-   - Buttons disabled during save operations
-   - Clear error messages on failure
+**Files Modified:**
+- `/app/frontend/src/pages/VendorsPage.jsx`
 
-3. **Skeleton Loading**
-   - Context-aware skeletons for all pages (Dashboard, Bookings, Vendors, Payments, Reports, Party Planning, Calendar, Halls, Customers, SuperAdmin)
-   - Soft purple/neutral shimmer with prefers-reduced-motion support
-   - Layout-preserving placeholders
+### Implemented: Elite Vendor System Backend
 
-4. **Destructive Action Protection**
-   - AlertDialog confirmations for all delete operations (Halls, Vendors)
-   - Clear warning messaging with entity names
+#### New Data Models
+1. **VendorTransaction** - Full ledger with debit/credit/payment entries
+   - `tenant_id`, `vendor_id`, `booking_id` (nullable)
+   - `transaction_type`: debit | credit | payment
+   - `amount`, `payment_method`, `reference_id`, `transaction_date`, `note`
 
-5. **Intelligence Cues**
-   - Non-intrusive alerts for: pending payments, at-risk events, understaffing warnings, vendor confirmation alerts
-   - Dismissible notifications
+2. **BookingVendor** - Enhanced vendor assignments per booking
+   - `tenant_id`, `booking_id`, `vendor_id`
+   - `category_snapshot`, `agreed_amount`, `tax`, `advance_expected`
+   - `amount_paid`, `balance_due`, `status`, `notes`
 
-#### Page-Specific Enhancements
-- **Dashboard**: Intelligence cues, animated stats, events today highlight
-- **Bookings List**: Status badges, today/upcoming/past sorting, "TODAY" badges
-- **Booking Detail/Edit**: Status badge, last updated time, party plan warnings, motion transitions
-- **Party Planning**: Enhanced vendors tab (3 assignment modes), enhanced staff tab (smart suggest, +/- controls)
-- **Vendors**: Skeleton loading, AlertDialog delete confirmation, save feedback
-- **Halls**: Skeleton loading, AlertDialog delete confirmation, save feedback
-- **Customers**: Skeleton loading, save feedback
-- **Calendar**: Skeleton grid loading
-- **Payments**: Skeleton loading
-- **Reports**: Skeleton loading
-- **SuperAdmin Tenants**: Dark theme skeleton loading
+#### New API Endpoints
+- `GET /api/vendors/directory` - Vendor list with balance summary
+- `GET /api/vendors/{id}/ledger` - Full transaction history
+- `POST /api/vendors/{id}/transactions` - Record debit/credit/payment
+- `GET /api/bookings/{id}/vendors` - Get booking vendor assignments
+- `POST /api/bookings/{id}/vendors` - Assign vendor to booking
+- `PUT /api/bookings/{id}/vendors/{assignment_id}` - Update assignment
+- `DELETE /api/bookings/{id}/vendors/{assignment_id}` - Remove vendor
+- `POST /api/bookings/{id}/vendors/{assignment_id}/pay` - Record payment
 
-### Party Planner Elite Upgrade
+#### Balance Logic
+- **Payable** = Debits - Credits - Payments (positive = you owe vendor)
+- **Receivable** = negative balance (vendor owes you)
+- **Settled** = balance is 0
 
-#### Vendors Tab
-- Three assignment modes: Select from directory, Add new inline, Custom/Other
-- Vendor cards with status lifecycle: Invited → Confirmed → Arrived → Completed → Paid
-- Near-event warnings for unconfirmed vendors
-- Auto-generated checklist items per vendor category (DJ, Decor, Catering, Photography)
-- Cost tracking with balance calculation
+#### Frontend API Methods Added
+```javascript
+vendorAPI.getDirectory()
+vendorAPI.getLedger(vendorId)
+vendorAPI.createTransaction(vendorId, data)
+vendorAPI.getBookingVendors(bookingId)
+vendorAPI.assignToBooking(bookingId, data)
+vendorAPI.updateBookingVendor(bookingId, assignmentId, data)
+vendorAPI.removeFromBooking(bookingId, assignmentId)
+vendorAPI.recordPayment(bookingId, assignmentId, amount, paymentMethod, referenceId, note)
+```
 
-#### Staff Tab
-- Smart Suggest generates staffing plan based on guest count + event type + slot
-- Event type templates (Wedding: more staff, Birthday: fewer, Corporate: ushers)
-- Fast editing: +/- buttons for count, wage type toggle (Fixed/Hourly), shift times
-- Understaffing detection with warnings
-- Real-time total staff cost calculation
+## Pending Work
+
+### P0: Elite Vendor System Frontend
+- [ ] Vendor Directory UI with payable/receivable balances
+- [ ] Vendor Ledger Modal with transaction history
+- [ ] Transaction entry form (debit/credit/payment)
+- [ ] Party Planner vendor tab integration
+- [ ] Booking vendor assignment workflow
+
+### P1: Dashboard Intelligence
+- [ ] At-risk events widget based on readiness scores
+- [ ] Unpaid vendor alerts
+- [ ] Understaffing warnings
+
+### P2: Refactoring
+- [ ] Split server.py into modular routers
+- [ ] Clean up index.css
 
 ## Technical Architecture
 ```
 /app/
 ├── backend/
-│   └── server.py              # FastAPI with multi-tenant logic
+│   └── server.py              # FastAPI with elite vendor system
 └── frontend/
     └── src/
-        ├── components/
-        │   └── ui/
-        │       ├── status-badge.jsx      # Entity status badges
-        │       ├── save-feedback.jsx     # Save state feedback
-        │       ├── intelligence-cue.jsx  # Alert notifications
-        │       └── skeletons.jsx         # Context-aware skeletons
+        ├── lib/api.js         # Updated with vendor ledger APIs
         └── pages/
-            ├── PartyPlanningPage.jsx     # Enhanced with vendor/staff tabs
-            ├── BookingsPage.jsx          # Status badges, sorting
-            ├── DashboardPage.jsx         # Intelligence cues
-            ├── BookingFormPage.jsx       # Status, last updated, warnings
-            ├── VendorsPage.jsx           # Skeletons, AlertDialog
-            ├── HallsPage.jsx             # Skeletons, AlertDialog
-            ├── CustomersPage.jsx         # Skeletons, save feedback
-            ├── CalendarPage.jsx          # Skeleton grid
-            └── superadmin/
-                └── TenantsPage.jsx       # Dark skeleton loading
+            └── VendorsPage.jsx # Fixed animation issue
 ```
-
-## UI Components Created
-1. **StatusBadge** - Entity status with icons and colors
-2. **SaveFeedback** - Saving/Saved/Error states with auto-reset
-3. **useSaveState** - Hook for save state management
-4. **IntelligenceCue** - Warning, info, danger dismissible alerts
-5. **Skeleton components** - 15+ context-aware placeholders
-
-## Pending/Backlog
-- Phase 4: Dashboard Intelligence widgets (at-risk events widget)
-- Phase 5: Quality & Safety validation
-- Refactor server.py into modular routers
 
 ## Test Credentials
 - Super Admin: super_admin@banquetos.com / superadmin123
 - Tenant Admin: admin@mayurbanquet.com / admin123
 - Reception: reception@mayurbanquet.com / reception123
 
-## Quality Confirmation
-✅ No layout changes
-✅ No color/font changes
-✅ UI feels calm, not busy
-✅ User never wonders "what now?"
-✅ All admin pages feel consistent
-✅ No visual regressions
+## API Testing Examples
+```bash
+# Get vendor directory with balances
+GET /api/vendors/directory
+
+# Get vendor ledger
+GET /api/vendors/{vendor_id}/ledger
+
+# Record a debit transaction
+POST /api/vendors/{vendor_id}/transactions
+{
+  "vendor_id": "...",
+  "transaction_type": "debit",
+  "amount": 15000,
+  "note": "Event services"
+}
+
+# Record a payment
+POST /api/vendors/{vendor_id}/transactions
+{
+  "vendor_id": "...",
+  "transaction_type": "payment",
+  "amount": 5000,
+  "payment_method": "UPI",
+  "reference_id": "UTR123456"
+}
+```
