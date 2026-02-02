@@ -243,7 +243,24 @@ class Customer(BaseModel):
     email: EmailStr
     phone: str
     address: str = ""
+    tenant_id: Optional[str] = None
+    is_deleted: bool = False  # Soft delete
+    deleted_at: Optional[datetime] = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+# ==================== AUDIT LOG MODEL ====================
+class AuditLog(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    tenant_id: Optional[str] = None
+    user_id: str
+    user_email: str
+    action: str  # create, update, delete, restore
+    entity_type: str  # booking, hall, customer, etc.
+    entity_id: str
+    changes: dict = {}  # {field: {old: value, new: value}}
+    metadata: dict = {}
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class BookingCreate(BaseModel):
     customer_id: str
