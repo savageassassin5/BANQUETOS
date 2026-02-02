@@ -1988,13 +1988,12 @@ async def update_party_plan(booking_id: str, plan_data: PartyPlanCreate, current
     await db.party_plans.update_one({"booking_id": booking_id}, {"$set": update_data})
     
     # Update or create staff expense
-    await db.party_expenses.delete_many({"booking_id": booking_id, "category": "staff", "notes": {"$regex": "party planning"}})
+    await db.party_expenses.delete_many({"booking_id": booking_id, "expense_name": {"$regex": "Staff wages"}, "notes": {"$regex": "party planning"}})
     
     if total_staff_charges > 0:
         expense_doc = PartyExpense(
             booking_id=booking_id,
-            category="staff",
-            description="Staff wages from party planning",
+            expense_name="Staff wages from party planning",
             amount=total_staff_charges,
             notes="Auto-generated from party planning"
         ).model_dump()
