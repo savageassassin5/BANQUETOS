@@ -1890,8 +1890,7 @@ async def create_party_plan(plan_data: PartyPlanCreate, current_user: dict = Dep
     if total_staff_charges > 0:
         expense_doc = PartyExpense(
             booking_id=plan_data.booking_id,
-            category="Staff",
-            description="Staff wages from party planning",
+            expense_name="Staff wages from party planning",
             amount=total_staff_charges,
             notes="Auto-generated from party planning"
         ).model_dump()
