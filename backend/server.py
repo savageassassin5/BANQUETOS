@@ -404,23 +404,60 @@ class StaffAssignment(BaseModel):
 
 class PartyPlanCreate(BaseModel):
     booking_id: str
+    # Vendor assignments
     dj_vendor_id: Optional[str] = None
     decor_vendor_id: Optional[str] = None
     catering_vendor_id: Optional[str] = None
     custom_vendors: List[str] = []  # List of vendor IDs
-    staff_assignments: List[dict] = []  # [{name, role, charge}]
+    # Staff assignments with detailed info
+    staff_assignments: List[dict] = []  # [{name, role, count, shift_start, shift_end, wage_type, wage, assigned_names, attendance}]
+    # Timeline / Run-of-show
+    timeline_tasks: List[dict] = []  # [{id, time, title, owner, owner_type, status, notes}]
+    # Inventory & Setup
+    inventory: dict = {}  # {tables, chairs, stage, sound, lights, etc.}
+    setup_notes: str = ""
+    # Kitchen / Menu execution
+    menu_execution: dict = {}  # {veg_count, non_veg_count, special_notes, allergies, prep_timeline}
+    # Documents
+    documents: List[dict] = []  # [{id, name, type, url, uploaded_at}]
+    # Activity log
+    activity_log: List[dict] = []  # [{id, action, user, timestamp, details}]
+    # General notes
     notes: str = ""
 
 class PartyPlan(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     booking_id: str
+    tenant_id: Optional[str] = None
+    # Vendor assignments
     dj_vendor_id: Optional[str] = None
     decor_vendor_id: Optional[str] = None
     catering_vendor_id: Optional[str] = None
     custom_vendors: List[str] = []
+    vendor_statuses: dict = {}  # {vendor_id: {status, confirmed_at, notes}}
+    # Staff with enhanced fields
     staff_assignments: List[dict] = []
     total_staff_charges: float = 0
+    # Timeline
+    timeline_tasks: List[dict] = []
+    # Inventory
+    inventory: dict = {}
+    setup_notes: str = ""
+    # Menu execution
+    menu_execution: dict = {}
+    # Documents
+    documents: List[dict] = []
+    # Activity log
+    activity_log: List[dict] = []
+    # Readiness calculation
+    readiness_score: int = 0  # 0-100
+    readiness_breakdown: dict = {}  # {vendor_confirmed, staff_scheduled, checklist_complete, deposit_received, inventory_confirmed, runsheet_generated}
+    # Sync tracking
+    booking_snapshot: dict = {}  # Snapshot of booking at plan creation
+    booking_changed: bool = False  # Flag if booking details changed
+    change_warnings: List[str] = []  # List of changes that need review
+    # Notes
     notes: str = ""
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
