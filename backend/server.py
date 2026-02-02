@@ -704,6 +704,105 @@ async def get_tenant_filter(current_user: dict) -> dict:
         raise HTTPException(status_code=403, detail="No tenant associated")
     return {"tenant_id": tenant_id}
 
+# ==================== AUDIT LOG HELPER ====================
+async def create_audit_log(
+    tenant_id: Optional[str],
+    user_id: str,
+    user_email: str,
+    action: str,
+    entity_type: str,
+    entity_id: str,
+    changes: dict = None,
+    metadata: dict = None
+):
+    """Create an audit log entry"""
+    log = AuditLog(
+        tenant_id=tenant_id,
+        user_id=user_id,
+        user_email=user_email,
+        action=action,
+        entity_type=entity_type,
+        entity_id=entity_id,
+        changes=changes or {},
+        metadata=metadata or {}
+    )
+    log_doc = log.model_dump()
+    log_doc['timestamp'] = log_doc['timestamp'].isoformat()
+    await db.audit_logs.insert_one(log_doc)
+    return log.id
+
+# ==================== PERMISSION MATRIX ====================
+PERMISSION_MATRIX = {
+    "super_admin": ["*"],  # All permissions
+    "tenant_admin": [
+        "bookings:*", "halls:*", "menu:*", "customers:*", "payments:*",
+        "enquiries:*", "reports:read", "vendors:*", "analytics:read",
+        "expenses:*", "party_planning:*", "users:read", "users:write"
+    ],
+    "admin": [
+        "bookings:*", "halls:*", "menu:*", "customers:*", "payments:*",
+        "enquiries:*", "reports:read", "vendors:*", "analytics:read",
+        "expenses:*", "party_planning:*"
+    ],
+    "reception": [
+        "bookings:create", "bookings:read", "bookings:update",
+        "halls:read", "menu:read", "customers:*", "payments:create", "payments:read",
+        "enquiries:*"
+    ],
+    "staff": [
+        "bookings:read", "halls:read", "menu:read", "customers:read"
+    ]
+}
+
+def has_permission(role: str, permission: str) -> bool:
+    """Check if a role has a specific permission"""
+    if role == "super_admin":
+        return True
+    
+    permissions = PERMISSION_MATRIX.get(role, [])
+    if "*" in permissions:
+        return True
+    
+    # Check exact match or wildcard
+    entity, action = permission.split(":") if ":" in permission else (permission, "*")
+    
+    for perm in permissions:
+        perm_entity, perm_action = perm.split(":") if ":" in perm else (perm, "*")
+        if perm_entity == entity and (perm_action == "*" or perm_action == action):
+            return True
+    
+    return False
+
+def require_permission(current_user: dict, permission: str):
+    """Require a specific permission"""
+    if not has_permission(current_user.get('role', ''), permission):
+        raise HTTPException(status_code=403, detail=f"Permission denied: {permission}")
+    return True
+
+# ==================== BOOKING CONFLICT PREVENTION ====================
+async def check_booking_conflict(hall_id: str, event_date: str, slot: str, exclude_booking_id: str = None, tenant_id: str = None):
+    """Check if there's a booking conflict"""
+    query = {
+        "hall_id": hall_id,
+        "event_date": event_date,
+        "slot": slot,
+        "status": {"$ne": "cancelled"},
+        "is_deleted": {"$ne": True}
+    }
+    
+    if exclude_booking_id:
+        query["id"] = {"$ne": exclude_booking_id}
+    
+    if tenant_id:
+        query["tenant_id"] = tenant_id
+    
+    existing = await db.bookings.find_one(query, {"_id": 0})
+    if existing:
+        raise HTTPException(
+            status_code=409,
+            detail=f"Booking conflict: Hall is already booked for {event_date} ({slot} slot)"
+        )
+
 def get_slot_times(slot: SlotType) -> tuple:
     """Get start and end times for a slot"""
     if slot == SlotType.DAY:
