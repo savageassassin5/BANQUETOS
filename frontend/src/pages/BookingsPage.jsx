@@ -231,18 +231,32 @@ const BookingsPage = () => {
                                 </tr>
                             </thead>
                             <tbody>
-                                {filteredBookings.length > 0 ? (
-                                    filteredBookings.map((booking, idx) => (
+                                {sortedBookings.length > 0 ? (
+                                    sortedBookings.map((booking, idx) => {
+                                        const bookingIsToday = isToday(booking.event_date);
+                                        const bookingIsPast = isPast(booking.event_date);
+                                        return (
                                         <motion.tr
                                             key={booking.id}
                                             initial={{ opacity: 0 }}
                                             animate={{ opacity: 1 }}
-                                            transition={{ delay: idx * 0.05 }}
-                                            className="border-b last:border-0 hover:bg-gray-50"
+                                            transition={{ delay: idx * 0.03 }}
+                                            className={`border-b last:border-0 transition-colors ${
+                                                bookingIsToday 
+                                                    ? 'bg-violet-50/50 hover:bg-violet-100/50' 
+                                                    : bookingIsPast 
+                                                        ? 'bg-slate-50/50 hover:bg-slate-100/50 opacity-75'
+                                                        : 'hover:bg-gray-50'
+                                            }`}
                                             data-testid={`booking-row-${booking.id}`}
                                         >
                                             <td className="py-4 px-4">
-                                                <span className="font-mono text-sm">{booking.booking_number}</span>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="font-mono text-sm">{booking.booking_number}</span>
+                                                    {bookingIsToday && (
+                                                        <Badge className="bg-violet-100 text-violet-700 text-[10px] px-1.5 py-0.5">TODAY</Badge>
+                                                    )}
+                                                </div>
                                             </td>
                                             <td className="py-4 px-4">
                                                 <div>
@@ -265,14 +279,10 @@ const BookingsPage = () => {
                                                 </div>
                                             </td>
                                             <td className="py-4 px-4">
-                                                <Badge className={getStatusColor(booking.status)}>
-                                                    {booking.status}
-                                                </Badge>
+                                                <StatusBadge type="booking" status={booking.status} />
                                             </td>
                                             <td className="py-4 px-4">
-                                                <Badge className={getPaymentStatusColor(booking.payment_status)}>
-                                                    {booking.payment_status}
-                                                </Badge>
+                                                <StatusBadge type="payment" status={booking.payment_status} />
                                             </td>
                                             <td className="py-4 px-4">
                                                 <div className="flex items-center gap-2">
