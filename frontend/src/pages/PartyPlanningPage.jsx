@@ -589,6 +589,17 @@ const PartyPlanningPage = () => {
     // Helper function for readiness color
     const getReadinessColor = (score) => score >= 80 ? 'green' : score >= 50 ? 'amber' : 'red';
 
+    // Readiness score badge component
+    const ReadinessScore = ({ score }) => {
+        const color = getReadinessColor(score);
+        return (
+            <div className="flex items-center gap-2">
+                <div className={`text-${color}-600 font-bold text-xl`}>{score}%</div>
+                <div className="text-xs text-gray-500">Ready</div>
+            </div>
+        );
+    };
+
     if (!isAdmin) {
         return (
             <div className="flex items-center justify-center h-96">
