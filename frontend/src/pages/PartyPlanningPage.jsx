@@ -1425,7 +1425,7 @@ const PartyPlanningPage = () => {
                             {planForm.timeline_tasks.length === 0 ? (
                                 <div className="text-center py-8 text-gray-500">
                                     <Clock className="h-10 w-10 mx-auto mb-2 text-gray-300" />
-                                    <p className="text-sm">No timeline generated. Click "Regenerate" to create one.</p>
+                                    <p className="text-sm">No timeline generated. Click &quot;Regenerate&quot; to create one.</p>
                                 </div>
                             ) : (
                                 <div className="space-y-2">
