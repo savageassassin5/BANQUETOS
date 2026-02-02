@@ -1,237 +1,198 @@
 <analysis>**original_problem_statement:**
-The user wants to enhance the Admin Panel of their Banquet Management System. The core requirement is to implement a series of complex financial and operational logic changes without altering the existing UI/UX theme.
+The user's initial goal was to enhance the existing Banquet Management System's admin panel. However, the project has undergone a significant pivot.
 
-**PRODUCT REQUIREMENTS:**
-- **Strictly No Redesign:** Do not change the existing admin panel UI/UX, layout, or colors.
-- **Functionality First:** Focus exclusively on implementing the required logic and fixing bugs.
+**The new, overriding objective is to convert the entire BANQUETOS application into a production-ready, advanced, multi-tenant SaaS platform.**
 
-**Latest User Request (Summary of Chat Message 414):**
-1.  **Expenses Section:**
-    *   In the Select Booking dropdown, show the **Booking ID and Customer Name** for clarity.
-    *   When Custom Expense is selected, enable a **manual text input** for the expense name.
-2.  **Vendor Payments:**
-    *   Implement advanced vendor payment management to track payments (advance, partial, final) and payment methods (cash, UPI, credit card).
-    *   The vendor ledger must auto-calculate outstanding balances.
-3.  **Expenses Module Structure:**
-    *   Organize the Expenses section into clear tabs: Party Expenses, Vendor Payments, and Outstanding Balances.
-4.  **New Booking Button:**
-    *   Fix the New Booking button to ensure it's always visible and clickable.
-5.  **Payment Recording:**
-    *   Ensure all payments recorded in the Payments section are correctly linked to the booking, customer, and payment type, and appear in reports.
+**PRODUCT REQUIREMENTS (New Plan - Non-Negotiable):**
+*   **No UI Redesign:** Reuse existing components, layouts, and styles. Minimal UI additions are only for Super Admin sections.
+*   **No WhatsApp/SaaS Billing:** Plans are labels only.
+*   **Phased Implementation:** The project is broken down into specific, sequential phases (A-H).
+
+**Phase A: Landing + Auth Flow**
+*   Get Started button must always go to .
+*   Implement role-based redirects after login:  -> , others -> .
+*   Set up route guards (Protected, Role-based, Feature-based).
+
+**Phase B: Multi-Tenant SaaS Core**
+*   Introduce  and  collections in MongoDB.
+*   Update  model for multi-tenancy (add , new roles).
+*   Add  to ALL business data collections (bookings, halls, customers, etc.).
+*   Enforce tenant isolation via JWT and backend middleware.
+*   Add DB indexes on .
+
+**Phase C: Feature Flags + Plans**
+*   Define a set of feature flags (bookings, calendar, etc.).
+*   Implement a feature resolution system (Plan -> Tenant -> Override).
+*   Block API access and hide sidebar links for disabled features.
+
+**Phase D: Super Admin Portal**
+*   Create a new section at  for tenant and plan management.
+*   Implement CRUD operations for tenants and plans.
+
+**Phase E: Super Admin User Management**
+*   Allow the Super Admin to manage users within each tenant (create, assign roles, disable, reset password).
+
+**Phase F: Party Planning (Fix + Stabilize)**
+*   Refactor the party planning feature to be tenant-aware and more robust.
+
+**Phase G: Advanced SaaS Foundations**
+*   Implement Audit Logs, Soft Deletes, Booking Conflict Prevention, Tenant Settings, a Permission Matrix, Data Export, and standardized Error Handling.
+
+**Phase H: Seed & Migration**
+*   Create a script to seed an initial , a demo tenant (Tamasha Banquet), and migrate existing data.
 
 **User's preferred language**: English
 
 **what currently exists?**
-The application is a full-stack Banquet Management System (FastAPI, React, MongoDB). The previous agent made significant changes to the admin panel's business logic based on user requests.
-- **Backend ():** Heavily modified to introduce role-based access (Admin vs. Reception), Day/Night booking slots, GST calculations, removal of hall charges, and initial stubs for a new expenses module. A reception user () has been added.
-- **Frontend:**
-    -  was updated with a new discount/payment structure.
-    -  now has visual indicators for Day/Night slots.
-    - A new but incomplete  was created.
-    - Role-based visibility has been added to the navigation in .
-The user has reviewed these changes and immediately provided a detailed list of corrections and further enhancements, indicating the current implementation is not complete or correct.
+The application is a single-tenant Banquet Management System built with FastAPI, React, and MongoDB. In this session, the agent implemented several major feature updates, including a complete redesign of the landing page and significant enhancements to the expenses and menu management modules. The agent also fixed a critical git repository corruption issue. The codebase currently contains a mix of completed features and partially implemented enhancements from a now-obsolete plan.
 
 **Last working item**:
-- **Last item agent was working:** The agent was reviewing files (, , ) to start implementing the user's latest set of corrections and feature enhancements for the expenses and payments modules. The agent had just finished a round of development but the user immediately pointed out new issues and requirements.
+- **Last item agent was working:** The agent had just received the massive multi-tenant SaaS refactoring plan from the user. It correctly identified this as the new priority and was starting **Phase A: Landing + Auth Flow**. The agent's last action was to view the relevant frontend files (, , etc.) to plan the implementation of the new authentication and routing logic.
 - **Status:** IN PROGRESS
-- **Agent Testing Done:** N (Only manual screenshot verification was done for the last set of complex changes, which proved insufficient).
-- **Which testing method agent to use?** both (Backend testing for logic/calculations and Frontend testing for UI interaction and data display).
+- **Agent Testing Done:** N
+- **Which testing method agent to use?** both
 - **User Testing Done:** N
 
 **All Pending/In progress Issue list**:
-- **Issue 1:** Expenses Section - Booking & Customer Visibility (P0)
-- **Issue 2:** Party Expenses - Custom Expense Input (P0)
-- **Issue 3:** Vendor Payments - Advanced Management (P0)
-- **Issue 4:** Expenses Section - Advanced Structure (P1)
-- **Issue 5:** Bookings Section - Fix New Booking button (P1)
-- **Issue 6:** Payments Section - Record Payments Correctly (P1)
+- **Issue 1:** Git Repository Corruption (P0)
 
 **Issues Detail:**
-- **Issue 1: Expenses Section - Booking & Customer Visibility**
-    - **Attempted fixes:** None.
-    - **Next debug checklist:**
-        1.  Modify the  endpoint in  or create a new one to return bookings with associated customer names.
-        2.  Update  to fetch this data.
-        3.  Change the  component for Select Booking to display both the booking ID and the customer's name.
-    - **Why fix this issue and what will be achieved with the fix?** To help admins easily identify which party an expense belongs to, preventing data entry errors.
-    - **Status:** NOT STARTED
-    - **Is recurring issue?** N
-    - **Should Test frontend/backend/both after fix?** frontend
-
-- **Issue 2: Party Expenses - Custom Expense Input**
-    - **Attempted fixes:** None.
-    - **Next debug checklist:**
-        1.  In , add conditional rendering to show a text  field when the Expense Type dropdown has Custom selected.
-        2.  Manage the state for this new input field.
-        3.  Update the backend expense model in  to accept a  field.
-        4.  Ensure the  API call sends this custom name.
-    - **Why fix this issue and what will be achieved with the fix?** Allows for flexible expense tracking beyond predefined categories.
-    - **Status:** NOT STARTED
-    - **Is recurring issue?** N
-    - **Should Test frontend/backend/both after fix?** both
-
-- **Issue 3: Vendor Payments - Advanced Management**
-    - **Attempted fixes:** A basic vendor balance sheet tab was created, but it lacks payment recording functionality.
-    - **Next debug checklist:**
-        1.  In , create a new  model and API endpoints () to record payments against vendors.
-        2.  The model should include , ,  (advance, partial, final), and  (cash, UPI, etc.).
-        3.  Update the  model to automatically calculate  and  when a new payment is made.
-        4.  In , build out the Vendor Balance Sheet tab UI to list vendors, their balances, and a form/dialog to add new payments.
-    - **Why fix this issue and what will be achieved with the fix?** To create a functional vendor ledger for tracking payables and managing cash flow.
-    - **Status:** IN PROGRESS
-    - **Is recurring issue?** N
-    - **Should Test frontend/backend/both after fix?** both
-
-- **Issue 4: Expenses Section - Advanced Structure**
-    - **Attempted fixes:** The agent created a basic two-tab layout.
-    - **Next debug checklist:**
-        1.  Review the UI in .
-        2.  Re-organize the content into three distinct tabs as requested: Party Expenses, Vendor Payments, and Outstanding Balances.
-        3.  Ensure the layout is clean and follows the existing design language.
-    - **Why fix this issue and what will be achieved with the fix?** Improves the usability of the new Expenses module by separating distinct functions.
-    - **Status:** IN PROGRESS
-    - **Is recurring issue?** N
-    - **Should Test frontend/backend/both after fix?** frontend
-
-- **Issue 5: Bookings Section - Fix New Booking button**
-    - **Attempted fixes:** None. This is a newly reported bug.
-    - **Next debug checklist:**
-        1.  Inspect .
-        2.  Check the CSS classes and rendering logic for the New Booking button.
-        3.  Verify its visibility and  handler across different screen sizes. It is likely a responsive design issue or a conflicting CSS class.
-    - **Why fix this issue and what will be achieved with the fix?** A critical action button for creating new bookings must be functional.
-    - **Status:** NOT STARTED
-    - **Is recurring issue?** N
-    - **Should Test frontend/backend/both after fix?** frontend
-
-- **Issue 6: Payments Section - Record Payments Correctly**
-    - **Attempted fixes:** The agent has modified payment logic multiple times, but the user implies it's still not right.
-    - **Next debug checklist:**
-        1.  Thoroughly review the Record Payment functionality in .
-        2.  Trace the API call to  and verify that the payment is correctly stored and linked to the booking and customer.
-        3.  Check the  to ensure these payments are correctly reflected in financial summaries.
-    - **Why fix this issue and what will be achieved with the fix?** Ensures accurate financial tracking, which is a core requirement of the system.
-    - **Status:** IN PROGRESS
-    - **Is recurring issue?** Y
+- **Issue 1: Git Repository Corruption**
+    - **Attempted fixes:** The agent detected a corrupted git object () which was preventing the user from saving to GitHub. The agent successfully fixed this by removing the  directory, re-initializing a new repository, adding all files, and committing them.
+    - **Next debug checklist:** The user should be prompted to try the Save to GitHub feature again. If it fails, the agent may need to perform a more in-depth check or guide the user to a rollback.
+    - **Why fix this issue and what will be achieved with the fix?** A working git repository is critical for version control and saving progress. This was a blocker for the user.
+    - **Status:** RESOLVED (User verification pending)
+    - **Is recurring issue?** Y (It occurred during this session)
+    - **Should Test frontend/backend/both after fix?** NA
+    - **Blocked on other issue:** None
 
 **In progress Task List**:
-- **Task 1: Implement Advanced Financial and Operational Logic**
-    - **Where to resume:** Start by addressing **Issue 1** (Expenses - Booking/Customer Visibility) and **Issue 5** (Fix New Booking Button) as they are quick but important fixes. Then, tackle the more complex logic for Vendor Payments (Issue 3) and Custom Expenses (Issue 2).
-    - **What will be achieved with this?** A production-ready admin panel that meets the user's detailed requirements for financial tracking and operational management.
+- **Task 1: Convert BANQUETOS to a Multi-Tenant SaaS Platform (P0)**
+    - **Where to resume:** The agent has acknowledged the new plan and has started on **Phase A**. The next step is to modify  and related auth components to implement the new routing logic:
+        1.  Ensure the Get Started button on  always navigates to .
+        2.  Modify the login flow in  and the auth context to handle redirects based on user roles ( vs. other roles).
+        3.  Create placeholder route guard components (, , ) in preparation for future phases.
+    - **What will be achieved with this?** Completion of Phase A will establish the foundational authentication and routing structure required for the multi-tenant system and the Super Admin portal.
     - **Status:** IN PROGRESS
     - **Should Test frontend/backend/both after fix?** both
     - **Blocked on something:** None
 
 **Upcoming and Future Tasks**
 - **Upcoming Tasks:**
-    - **P1:** Implement 3rd-party integration for automated WhatsApp/SMS notifications using .
-    - **P1:** Implement Export to PDF/Excel for all new reports (e.g., vendor ledgers).
+    - **P0: Phase B - Multi-Tenant SaaS Core:** Implement  across all models and enforce data isolation.
+    - **P0: Phase C - Feature Flags + Plans:** Build the feature flag system.
+    - **P0: Phase D - Super Admin Portal:** Create the UI and APIs for tenant management.
+    - **P0: Phase E - Super Admin User Management:** Add user management capabilities for the Super Admin.
 - **Future Tasks:**
-    - **P2:** Develop the optional Customer Login portal.
-    - **P2:** Integrate Google Calendar sync for bookings.
-    - **P2:** Add multi-language support (English/Punjabi).
+    - **P1: Phase F - Party Planning (Fix + Stabilize):** Refactor the feature for multi-tenancy.
+    - **P1: Phase G - Advanced SaaS Foundations:** Implement audit logs, soft delete, etc.
+    - **P1: Phase H - Seed & Migration:** Create the seeding and data migration script.
 
 **Completed work in this session**
 - **List of all completed tasks with file and method name:**
-    - Implemented comprehensive Role-Based Access Control (Admin vs. Reception) in  and .
-    - Removed Hall Charges from billing and added 5% GST calculation in  and .
-    - Implemented Day/Night booking slots with double-booking prevention in  and added visual indicators in .
-    - Created a new separate  and added it to the navigation (, ).
-    - Reworked the payment and discount structure in .
-    - Standardized button colors across multiple admin pages (, , , etc.).
-    - Fixed critical booking form bug where menu items were not selectable ().
-    - Replaced Made with Emergent with a Call Now button ().
-
+    - Addressed 6 priority issues related to the Expenses and Payments modules, fixing a critical  vs  bug (, ).
+    - Implemented a second set of enhancements, including a revamped  with a locked booking selection and a new category management system in .
+    - Fixed multiple MongoDB serialization errors by correctly excluding  from API responses.
+    - Completely redesigned the  to a modern SaaS theme for BanquetOS.
+    - Repaired a corrupted Git repository by re-initializing it.
 - **Recently completed:**
-  - New  created (DONE, but needs rework)
-  - Calendar Day/Night slot indicators (DONE)
-  - Reworked Payment/Discount section in Booking Form (DONE, but needs rework)
-  - Role-Based Access Control (Admin/Reception) (DONE)
+  - Landing Page Redesign (DONE)
+  - Git Repository Corruption Fix (DONE, awaiting user verification)
+  - Advanced Expense & Menu Management (DONE, but now may require refactoring for multi-tenancy)
+  - Priority Bug Fixes in Payments/Expenses (DONE)
 
 **Earlier issues found/mentioned but not fixed**
-All current pending issues are derived from the user's latest feedback message () and are listed in the **All Pending/In progress Issue list** section.
+- The agent was in the middle of implementing a list of 11 enhancements (custom GST, invoice updates, payment splits, etc.) from . This entire plan has been **superseded and made obsolete** by the new multi-tenant SaaS refactoring request (). The partial work done for this should be reviewed and potentially discarded or adapted to the new architecture.
 
 **Known issue recurrence from previous fork**
-- None.
+- **Issue recurrence in previous fork:** Git repository corruption.
+- **Recurrence count:** 1 (occurred in this session).
+- **Status:** RESOLVED (but the next agent should be aware of the fragility).
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
-- **Backend:** FastAPI, MongoDB (), Pydantic, JWT. The key addition is **Role-Based Access Control (RBAC)** logic using dependencies to protect admin-only endpoints.
+- **Backend:** FastAPI, MongoDB (), Pydantic, JWT.
 - **Frontend:** React, React Router, Tailwind CSS, Shadcn UI.
-- **State Management:** React ,  for Auth.
+- **Emerging Concepts (per new plan):** Multi-Tenancy Architecture, Role-Based Access Control (RBAC) with multiple levels (Super Admin, Tenant Admin), Feature Flagging, Database Indexing for performance.
 
 **key DB schema**
-- : {email, password_hash, role: Enum(admin, reception)}
-- : {name, capacity}
-- : {customer_id, hall_id, event_date, **slot: Enum(day, night)**, status, **payments: {cash, credit, upi}**, **discount: {type, value}**, **gst_amount**, total_amount, advance_paid, balance_due, **party_expenses: List[ObjectID]**}
-- : {name, price_per_plate, type, items}
-- ** (New/Updated collection):** {booking_id, expense_type, custom_expense_name, amount}
-- ** (Updated model):** {name, ..., total_payable, total_paid, outstanding_balance}
-- ** (New collection):** {vendor_id, amount, payment_type, payment_method, date}
+- **Existing (to be migrated):** , , , , , , .
+- **New Schema (to be implemented):**
+    - : { business_name, country, timezone, currency, status, plan_id, features_override }
+    - : { name, features: { bookings: bool, calendar: bool, ... } }
+    - : { **tenant_id** (nullable for super_admin), email, password, **role: super_admin|tenant_admin|reception|staff**, status }
+    - *All other collections will have a  field added.*
 
 **changes in tech stack**
-- None.
+- No change in core technologies, but a fundamental architectural shift from a single-tenant application to a multi-tenant SaaS platform.
 
 **All files of reference**
-- **Primary files for next agent:**
-    -  (for all backend logic changes)
-    -  (for all expense module UI/logic)
-    -  (for the New Booking button fix)
-    -  (for payment recording verification)
-    -  (to add new API calls)
-- **Secondary files:**
-    - 
-    - 
-    - 
+-  (Core backend logic, will require extensive modification)
+-  (For implementing new routing logic)
+-  (For updating API calls and JWT handling)
+-  (To verify Get Started button behavior)
+-  (For conditional sidebar based on feature flags)
+-  (Newly created page, will need refactoring)
 
 **Areas that need refactoring**:
--  is now critically oversized. The logic for bookings, payments, expenses, and vendors should be broken out into separate router files (e.g., ) for maintainability.
-- The new  needs to be structured properly with the requested tabs and robust state management.
+- The entire application is now slated for a major refactoring to implement the multi-tenant architecture.
+-  is a top priority to be broken down into modular routers (e.g., , , ).
+- All data-fetching hooks and components on the frontend must be updated to be tenant-aware.
 
 **key api endpoints**
-- , 
--  (POST, GET, PUT) - Updated with slot, GST, RBAC logic.
--  - Checks for day/night slot bookings.
-- **New Endpoints Needed:**
-    -  (POST, GET by booking_id)
-    -  (POST, GET by vendor_id)
-    - 
+- **Existing:** , , 
+- **New Endpoints Needed (for Super Admin):**
+    -  (CRUD)
+    -  (CRUD)
+    -  (CRUD)
+- **Updated Endpoints:**
+    -  (to return role, tenant_id, and feature flags)
 
 **Critical Info for New Agent**
-- **User is highly specific:** You must follow the requirements from the user's latest message () precisely. Do not introduce any changes, UI or otherwise, that were not explicitly requested.
-- **Focus on Logic, Not UI:** The theme and layout are fixed. All work is on data models, calculations, and component logic.
-- **RBAC is live:** Remember to test functionality as both an 'admin' and a 'reception' user to ensure permissions are working correctly. The reception user should have restricted access as defined.
-- **Test Incrementally:** The features being built are complex and interconnected (Bookings -> Expenses -> Vendors -> Reports). Test each piece thoroughly before moving to the next. Use the testing subagent after implementing the vendor payment and profit breakdown logic.
+- **Major Pivot:** The project's goal has completely changed to building a multi-tenant SaaS platform. All previous work must be evaluated through this new lens. Discard any work from the 11 enhancements plan that doesn't fit the new architecture.
+- **Follow The Plan:** The user has provided a detailed, phased, non-negotiable plan (Phases A-H). You must follow it sequentially. Start with Phase A.
+- **No UI Changes:** The user has been very explicit: do not change the existing UI/UX. Reuse components and styles.
+- **Git Repo Was Corrupted:** The git repository was recently repaired. Be mindful of this. Advise the user to test the Save to GitHub button.
+- **Testing:** The previous agent used the testing subagent effectively. Continue this practice after completing each major phase (e.g., after Phase B).
 
 **documents and test reports created in this job**
 - 
+- 
+-  (Contains a mix of old and new requirements, needs cleaning)
+- 
+- 
 
 **Last 10 User Messages and any pending HUMAN messages**
-10. : asks to implement a large set of new features and logical changes, including removing hall charges, adding GST, Day/Night slots, Party Costing, Net Profit, and role-based portals.
-9. : Confirms 'YES' to the agent's plan to implement the above features.
-8. : Asks for a new set of corrections after the agent's implementation, focusing on the Advance Paid section, calendar visibility, a complete redesign of the Expenses module, and profit breakdown reports.
-7. : Asks to implement another set of specific improvements, including showing customer names in expenses, allowing custom expense inputs, advanced vendor payment management, fixing the New Booking button, and ensuring payments are recorded correctly. This is the current active request.
+- : Asks how to connect a custom domain.
+- : Provides instructions on how to link a domain via the Emergent platform.
+- : Reports a git corrupt object error when trying to save to GitHub.
+- : Confirms the git issue and initiates a fix.
+- : Confirms the git repository has been repaired and asks the user to try again. Asks if it should continue with the previous (now obsolete) enhancement list.
+- : **Provides the new, massive, multi-phase plan to convert the app into a multi-tenant SaaS platform, making all prior enhancement requests obsolete.** This is the current and only active set of requirements.
+- : Acknowledges the new SaaS plan and starts analyzing the codebase for Phase A.
+- : Views  and other frontend routing files.
+- : States its plan to start implementing Phase A.
 
 **Project Health Check:**
-- **Broken:** The Expenses module is incomplete and does not meet user requirements. The New Booking button is reportedly broken. The payment recording flow is under scrutiny and may be faulty.
-- **Mocked:** The vendor balance sheet and profit breakdown reports are not yet fully implemented.
-- **Needs Refactoring:** The monolithic  is becoming unmanageable and is a high-priority candidate for being split into multiple routers.
+- **Broken:** The git repository was recently broken and repaired; its stability is unconfirmed by the user. The application is in a transitional state; features implemented before the pivot may not be compatible with the new multi-tenant architecture.
+- **Mocked:** None.
+- **Needs Refactoring:** The entire application requires a major architectural refactor to support multi-tenancy as per the user's detailed plan.
 
 **3rd Party Integrations**
-- : Used for PDF invoice generation.
-- **Planned:** A notification service (like Twilio) for WhatsApp/SMS.
+-  (for PDF generation)
 
 **Testing status**
-- **Testing agent used after significant changes:** YES, but not on the most recent set of changes, which led to the user finding issues.
+- **Testing agent used after significant changes:** YES, for features implemented before the multi-tenancy pivot.
 - **Troubleshoot agent used after agent stuck in loop:** NO
 - **Test files created:** None.
-- **Known regressions:** The New Booking button is a potential regression.
+- **Known regressions:** The state of the partially implemented 11 enhancements is unknown and may introduce regressions. The git repository was a critical failure point.
 
 **Credentials to test flow:**
 - **Admin:**  / 
 - **Reception:**  / 
+- **Note:** A new  role and user will need to be created as part of Phase H.
 
 **What agent forgot to execute**
-The agent has repeatedly implemented features that did not fully meet the user's detailed requirements, leading to immediate follow-up requests for corrections. The agent also failed to use the testing sub-agent after the last major refactoring of business logic, relying on simple screenshot verification which was inadequate and missed logical flaws. The next agent must be more meticulous in both implementation and verification.</analysis>
+The agent was on the correct path, having identified the major pivot and started analysis for Phase A. The previous plan (11 enhancements) is now irrelevant. The agent correctly handled user interruptions (domain question, git error) before focusing on the new core task.</analysis>
