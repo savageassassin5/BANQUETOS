@@ -253,8 +253,12 @@ const PartyPlanningPage = () => {
         setPlanDialogOpen(true);
     };
 
-    // Staff management
+    // Enhanced staff management with smart suggestions
     const addStaffMember = () => {
+        const defaultShifts = selectedBooking?.time_slot === 'Day' 
+            ? { shift_start: '09:00', shift_end: '17:00' }
+            : { shift_start: '17:00', shift_end: '23:00' };
+        
         setPlanForm(prev => ({
             ...prev,
             staff_assignments: [...prev.staff_assignments, { 
@@ -262,10 +266,10 @@ const PartyPlanningPage = () => {
                 count: 1, 
                 wage_type: 'fixed',
                 wage: 500,
-                shift_start: '',
-                shift_end: '',
+                ...defaultShifts,
                 assigned_names: [],
-                attendance: 'pending'
+                attendance: 'pending',
+                notes: ''
             }]
         }));
     };
@@ -278,6 +282,17 @@ const PartyPlanningPage = () => {
         });
     };
 
+    const incrementStaffCount = (index) => {
+        updateStaffMember(index, 'count', (planForm.staff_assignments[index]?.count || 1) + 1);
+    };
+
+    const decrementStaffCount = (index) => {
+        const current = planForm.staff_assignments[index]?.count || 1;
+        if (current > 1) {
+            updateStaffMember(index, 'count', current - 1);
+        }
+    };
+
     const removeStaffMember = (index) => {
         setPlanForm(prev => ({
             ...prev,
@@ -285,7 +300,44 @@ const PartyPlanningPage = () => {
         }));
     };
 
-    // Apply staff suggestions
+    // Smart staff suggestions based on event type and guest count
+    const generateSmartStaffPlan = () => {
+        if (!selectedBooking) return;
+        
+        const guestCount = selectedBooking.guest_count || 100;
+        const eventType = selectedBooking.event_type?.toLowerCase() || 'default';
+        const template = staffTemplates[eventType] || staffTemplates.default;
+        const slot = selectedBooking.time_slot;
+        
+        const defaultShifts = slot === 'Day' 
+            ? { shift_start: '09:00', shift_end: '17:00' }
+            : { shift_start: '17:00', shift_end: '23:00' };
+        
+        const suggestions = [];
+        
+        // Calculate counts based on template
+        Object.entries(template.base).forEach(([role, baseCount]) => {
+            const perGuest = template.perGuest[role] || 0;
+            const calculatedCount = Math.ceil(baseCount + (guestCount * perGuest));
+            const roleInfo = staffRoles.find(r => r.value === role);
+            
+            suggestions.push({
+                role,
+                count: calculatedCount,
+                wage_type: 'fixed',
+                wage: roleInfo?.defaultWage || 500,
+                ...defaultShifts,
+                assigned_names: [],
+                attendance: 'pending',
+                notes: ''
+            });
+        });
+        
+        setPlanForm(prev => ({ ...prev, staff_assignments: suggestions }));
+        toast.success(`Smart staff plan generated for ${guestCount} guests (${eventType})`);
+    };
+
+    // Apply staff suggestions from API
     const applyStaffSuggestions = async () => {
         if (!selectedBooking) return;
         try {
@@ -296,9 +348,140 @@ const PartyPlanningPage = () => {
             }));
             toast.success('Staff suggestions applied');
         } catch (error) {
-            toast.error('Failed to get suggestions');
+            // Fallback to local calculation
+            generateSmartStaffPlan();
         }
     };
+
+    // Calculate total staff cost
+    const totalStaffCost = useMemo(() => {
+        return planForm.staff_assignments.reduce((sum, s) => {
+            return sum + ((s.count || 0) * (s.wage || 0));
+        }, 0);
+    }, [planForm.staff_assignments]);
+
+    // Check for understaffing
+    const staffingWarnings = useMemo(() => {
+        if (!selectedBooking) return [];
+        const warnings = [];
+        const guestCount = selectedBooking.guest_count || 100;
+        const eventType = selectedBooking.event_type?.toLowerCase() || 'default';
+        const template = staffTemplates[eventType] || staffTemplates.default;
+        
+        const currentCounts = planForm.staff_assignments.reduce((acc, s) => {
+            acc[s.role] = (acc[s.role] || 0) + s.count;
+            return acc;
+        }, {});
+        
+        Object.entries(template.base).forEach(([role, baseCount]) => {
+            const perGuest = template.perGuest[role] || 0;
+            const suggested = Math.ceil(baseCount + (guestCount * perGuest));
+            const current = currentCounts[role] || 0;
+            
+            if (current < suggested * 0.7) {
+                warnings.push({
+                    role,
+                    current,
+                    suggested,
+                    message: `${role.charAt(0).toUpperCase() + role.slice(1)}s may be insufficient (${current}/${suggested})`
+                });
+            }
+        });
+        
+        return warnings;
+    }, [planForm.staff_assignments, selectedBooking]);
+
+    // Vendor management functions
+    const addVendorAssignment = (vendorData) => {
+        // Check for duplicate category
+        const existingCategory = vendorAssignments.find(v => v.category === vendorData.category);
+        if (existingCategory && vendorData.category !== 'other') {
+            toast.error(`A ${vendorCategories[vendorData.category]?.label || vendorData.category} vendor is already assigned`);
+            return;
+        }
+        
+        // Auto-add checklist items for this category
+        const categoryConfig = vendorCategories[vendorData.category] || vendorCategories.other;
+        const newChecklistItems = categoryConfig.checklistItems.map(item => ({
+            id: `${vendorData.category}-${Date.now()}-${Math.random()}`,
+            task: item,
+            status: 'pending',
+            category: vendorData.category
+        }));
+        
+        const newAssignment = {
+            id: `vendor-${Date.now()}`,
+            ...vendorData,
+            status: vendorData.status || 'invited'
+        };
+        
+        setVendorAssignments(prev => [...prev, newAssignment]);
+        setPlanForm(prev => ({
+            ...prev,
+            vendor_assignments: [...(prev.vendor_assignments || []), newAssignment],
+            timeline_tasks: [...(prev.timeline_tasks || []), ...newChecklistItems]
+        }));
+        
+        setShowAddVendor(false);
+        resetNewVendorForm();
+        toast.success('Vendor assigned');
+    };
+
+    const updateVendorStatus = (vendorId, newStatus) => {
+        setVendorAssignments(prev => prev.map(v => 
+            v.id === vendorId ? { ...v, status: newStatus } : v
+        ));
+        setPlanForm(prev => ({
+            ...prev,
+            vendor_assignments: (prev.vendor_assignments || []).map(v => 
+                v.id === vendorId ? { ...v, status: newStatus } : v
+            )
+        }));
+    };
+
+    const removeVendorAssignment = (vendorId) => {
+        setVendorAssignments(prev => prev.filter(v => v.id !== vendorId));
+        setPlanForm(prev => ({
+            ...prev,
+            vendor_assignments: (prev.vendor_assignments || []).filter(v => v.id !== vendorId)
+        }));
+        toast.success('Vendor removed');
+    };
+
+    const resetNewVendorForm = () => {
+        setNewVendorForm({
+            name: '', phone: '', email: '', category: 'other', cost: 0, advance: 0, notes: '', status: 'invited'
+        });
+        setNewVendorMode('select');
+    };
+
+    // Calculate vendor costs
+    const totalVendorCost = useMemo(() => {
+        return vendorAssignments.reduce((sum, v) => sum + (v.cost || 0), 0);
+    }, [vendorAssignments]);
+
+    const vendorBalance = useMemo(() => {
+        return vendorAssignments.reduce((sum, v) => sum + ((v.cost || 0) - (v.advance || 0)), 0);
+    }, [vendorAssignments]);
+
+    // Check for unconfirmed vendors near event date
+    const vendorWarnings = useMemo(() => {
+        if (!selectedBooking) return [];
+        const eventDate = new Date(selectedBooking.event_date);
+        const today = new Date();
+        const daysUntilEvent = Math.ceil((eventDate - today) / (1000 * 60 * 60 * 24));
+        
+        if (daysUntilEvent <= 7) {
+            return vendorAssignments
+                .filter(v => v.status === 'invited')
+                .map(v => ({
+                    vendor: v.name || vendorCategories[v.category]?.label || v.category,
+                    daysUntilEvent,
+                    message: `${v.name || v.category} not confirmed - event in ${daysUntilEvent} days`
+                }));
+        }
+        return [];
+    }, [vendorAssignments, selectedBooking]);
 
     // Timeline management
     const updateTimelineTask = async (taskId, newStatus) => {
