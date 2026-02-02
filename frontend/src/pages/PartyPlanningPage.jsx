@@ -206,6 +206,7 @@ const PartyPlanningPage = () => {
                     decor_vendor_id: res.data.plan.decor_vendor_id || '',
                     catering_vendor_id: res.data.plan.catering_vendor_id || '',
                     custom_vendors: res.data.plan.custom_vendors || [],
+                    vendor_assignments: res.data.plan.vendor_assignments || [],
                     staff_assignments: res.data.plan.staff_assignments || [],
                     timeline_tasks: res.data.plan.timeline_tasks || [],
                     inventory: res.data.plan.inventory || {},
@@ -213,6 +214,7 @@ const PartyPlanningPage = () => {
                     menu_execution: res.data.plan.menu_execution || {},
                     notes: res.data.plan.notes || ''
                 });
+                setVendorAssignments(res.data.plan.vendor_assignments || []);
             } else {
                 // Reset form for new plan
                 setPlanForm({
@@ -221,6 +223,7 @@ const PartyPlanningPage = () => {
                     decor_vendor_id: '',
                     catering_vendor_id: '',
                     custom_vendors: [],
+                    vendor_assignments: [],
                     staff_assignments: [],
                     timeline_tasks: [],
                     inventory: {},
@@ -228,6 +231,7 @@ const PartyPlanningPage = () => {
                     menu_execution: {},
                     notes: ''
                 });
+                setVendorAssignments([]);
             }
             
             // Load profit snapshot
