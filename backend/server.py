@@ -520,6 +520,7 @@ class Vendor(BaseModel):
     total_paid: float = 0
     outstanding_balance: float = 0
     is_active: bool = True
+    tenant_id: Optional[str] = None  # Multi-tenant support
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class VendorAssignmentCreate(BaseModel):
