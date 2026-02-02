@@ -440,7 +440,7 @@ const VendorsPage = () => {
             </motion.div>
 
             {filteredVendors.length === 0 && (
-                <motion.div variants={itemVariants}>
+                <motion.div variants={itemVariants} initial="hidden" animate="visible">
                     <Card className="bg-white border-0 shadow-lg rounded-2xl">
                         <CardContent className="py-16 text-center">
                             <motion.div
