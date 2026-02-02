@@ -401,7 +401,7 @@ const BookingsPage = () => {
                                                 </div>
                                             </td>
                                         </motion.tr>
-                                    ))
+                                    );})
                                 ) : (
                                     <tr>
                                         <td colSpan="9" className="py-8 text-center text-gray-500">
