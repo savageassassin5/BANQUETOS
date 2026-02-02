@@ -1558,88 +1558,348 @@ async def delete_party_expense(expense_id: str, current_user: dict = Depends(get
 # ==================== PARTY PLANNING ROUTES (ADMIN ONLY) ====================
 @api_router.get("/party-plans")
 async def get_party_plans(current_user: dict = Depends(get_current_user)):
-    if current_user.get('role') != 'admin':
-        raise HTTPException(status_code=403, detail="Admin access required")
-    plans = await db.party_plans.find({}, {"_id": 0}).sort("created_at", -1).to_list(100)
+    tenant_filter = await get_tenant_filter(current_user)
+    plans = await db.party_plans.find(tenant_filter, {"_id": 0}).sort("created_at", -1).to_list(100)
     return plans
 
-@api_router.get("/party-plans/{booking_id}")
-async def get_party_plan(booking_id: str, current_user: dict = Depends(get_current_user)):
-    if current_user.get('role') != 'admin':
-        raise HTTPException(status_code=403, detail="Admin access required")
-    plan = await db.party_plans.find_one({"booking_id": booking_id}, {"_id": 0})
-    return plan
-
-@api_router.post("/party-plans")
-async def create_party_plan(plan_data: PartyPlanCreate, current_user: dict = Depends(get_current_user)):
-    if current_user.get('role') != 'admin':
-        raise HTTPException(status_code=403, detail="Admin access required")
+@api_router.get("/party-plans/by-booking/{booking_id}")
+async def get_party_plan_by_booking(booking_id: str, current_user: dict = Depends(get_current_user)):
+    """Get party plan for a specific booking - primary API for frontend"""
+    tenant_filter = await get_tenant_filter(current_user)
     
-    # Check if booking exists and is confirmed
-    booking = await db.bookings.find_one({"id": plan_data.booking_id}, {"_id": 0})
+    # First verify the booking exists and belongs to tenant
+    booking = await db.bookings.find_one({"id": booking_id, **tenant_filter}, {"_id": 0})
     if not booking:
         raise HTTPException(status_code=404, detail="Booking not found")
     
-    # Check if plan already exists for this booking
-    existing = await db.party_plans.find_one({"booking_id": plan_data.booking_id}, {"_id": 0})
+    # Get the party plan
+    plan = await db.party_plans.find_one({"booking_id": booking_id, **tenant_filter}, {"_id": 0})
+    
+    # Check if booking details changed since plan was created
+    if plan and plan.get('booking_snapshot'):
+        change_warnings = []
+        snapshot = plan.get('booking_snapshot', {})
+        
+        if snapshot.get('event_date') != booking.get('event_date'):
+            change_warnings.append(f"Event date changed from {snapshot.get('event_date')} to {booking.get('event_date')}")
+        if snapshot.get('slot') != booking.get('slot'):
+            change_warnings.append(f"Slot changed from {snapshot.get('slot')} to {booking.get('slot')}")
+        if snapshot.get('guest_count') != booking.get('guest_count'):
+            change_warnings.append(f"Guest count changed from {snapshot.get('guest_count')} to {booking.get('guest_count')}")
+        if snapshot.get('hall_id') != booking.get('hall_id'):
+            change_warnings.append(f"Hall/Venue changed")
+        
+        if change_warnings:
+            plan['booking_changed'] = True
+            plan['change_warnings'] = change_warnings
+    
+    return {
+        "booking": booking,
+        "plan": plan,
+        "has_plan": plan is not None
+    }
+
+@api_router.get("/party-plans/{booking_id}")
+async def get_party_plan(booking_id: str, current_user: dict = Depends(get_current_user)):
+    tenant_filter = await get_tenant_filter(current_user)
+    plan = await db.party_plans.find_one({"booking_id": booking_id, **tenant_filter}, {"_id": 0})
+    return plan
+
+def calculate_readiness_score(plan: dict, booking: dict, payments: list) -> tuple:
+    """Calculate event readiness score and breakdown"""
+    breakdown = {
+        "vendor_confirmed": False,
+        "staff_scheduled": False,
+        "checklist_complete": False,
+        "deposit_received": False,
+        "inventory_confirmed": False,
+        "runsheet_generated": False
+    }
+    
+    # Vendor confirmed (at least one vendor assigned)
+    has_vendors = bool(plan.get('dj_vendor_id') or plan.get('decor_vendor_id') or 
+                       plan.get('catering_vendor_id') or plan.get('custom_vendors'))
+    breakdown["vendor_confirmed"] = has_vendors
+    
+    # Staff scheduled (at least one staff member)
+    has_staff = len(plan.get('staff_assignments', [])) > 0
+    breakdown["staff_scheduled"] = has_staff
+    
+    # Checklist complete (has timeline tasks with some completed)
+    timeline_tasks = plan.get('timeline_tasks', [])
+    if timeline_tasks:
+        completed = sum(1 for t in timeline_tasks if t.get('status') == 'done')
+        breakdown["checklist_complete"] = completed >= len(timeline_tasks) * 0.5  # 50% complete
+    
+    # Deposit received (check if any payment made)
+    total_paid = sum(p.get('amount', 0) for p in payments)
+    breakdown["deposit_received"] = total_paid > 0
+    
+    # Inventory confirmed (has inventory items)
+    inventory = plan.get('inventory', {})
+    breakdown["inventory_confirmed"] = len(inventory) > 0
+    
+    # Runsheet generated (has timeline with 3+ tasks)
+    breakdown["runsheet_generated"] = len(timeline_tasks) >= 3
+    
+    # Calculate score
+    score = sum(20 if v else 0 for v in breakdown.values())  # Each item is 20 points max = 100
+    
+    return score, breakdown
+
+def generate_default_timeline(event_type: str, slot: str, guest_count: int) -> list:
+    """Generate smart default timeline based on event parameters"""
+    tasks = []
+    task_id = 0
+    
+    # Determine base times based on slot
+    if slot == 'day':
+        base_hour = 10  # 10 AM start
+    else:
+        base_hour = 18  # 6 PM start for night
+    
+    # Common tasks
+    common_tasks = [
+        {"offset": -2, "title": "Venue Setup Start", "owner": "Staff", "owner_type": "staff"},
+        {"offset": -1, "title": "Vendor Arrival Check", "owner": "Supervisor", "owner_type": "staff"},
+        {"offset": -0.5, "title": "Sound & Light Check", "owner": "DJ/Sound", "owner_type": "vendor"},
+        {"offset": 0, "title": "Guest Arrival Begins", "owner": "Reception", "owner_type": "staff"},
+    ]
+    
+    # Event-specific tasks
+    if event_type in ['wedding', 'engagement']:
+        common_tasks.extend([
+            {"offset": 0.5, "title": "Welcome Ceremony", "owner": "Host", "owner_type": "other"},
+            {"offset": 1, "title": "Ring Ceremony / Rituals", "owner": "Pandit/Host", "owner_type": "other"},
+            {"offset": 2, "title": "Photo Session", "owner": "Photography", "owner_type": "vendor"},
+            {"offset": 3, "title": "Dinner Service Start", "owner": "Catering", "owner_type": "vendor"},
+            {"offset": 4, "title": "Dance/DJ Session", "owner": "DJ", "owner_type": "vendor"},
+            {"offset": 5, "title": "Guest Departure", "owner": "Staff", "owner_type": "staff"},
+            {"offset": 5.5, "title": "Cleanup & Close", "owner": "Staff", "owner_type": "staff"},
+        ])
+    elif event_type == 'corporate':
+        common_tasks.extend([
+            {"offset": 0.5, "title": "Registration Desk", "owner": "Reception", "owner_type": "staff"},
+            {"offset": 1, "title": "Presentation/Session 1", "owner": "Client", "owner_type": "other"},
+            {"offset": 2, "title": "Tea/Coffee Break", "owner": "Catering", "owner_type": "vendor"},
+            {"offset": 2.5, "title": "Session 2 / Discussion", "owner": "Client", "owner_type": "other"},
+            {"offset": 3.5, "title": "Lunch/Dinner Service", "owner": "Catering", "owner_type": "vendor"},
+            {"offset": 4.5, "title": "Closing & Networking", "owner": "Client", "owner_type": "other"},
+            {"offset": 5, "title": "Cleanup", "owner": "Staff", "owner_type": "staff"},
+        ])
+    elif event_type == 'birthday':
+        common_tasks.extend([
+            {"offset": 0.5, "title": "Welcome Activities", "owner": "Host", "owner_type": "other"},
+            {"offset": 1.5, "title": "Games/Entertainment", "owner": "Entertainment", "owner_type": "vendor"},
+            {"offset": 2.5, "title": "Cake Cutting", "owner": "Host", "owner_type": "other"},
+            {"offset": 3, "title": "Dinner/Snacks Service", "owner": "Catering", "owner_type": "vendor"},
+            {"offset": 4, "title": "Dance/Music", "owner": "DJ", "owner_type": "vendor"},
+            {"offset": 4.5, "title": "Return Gifts", "owner": "Host", "owner_type": "other"},
+            {"offset": 5, "title": "Cleanup", "owner": "Staff", "owner_type": "staff"},
+        ])
+    else:  # reception, custom
+        common_tasks.extend([
+            {"offset": 1, "title": "Welcome/Greeting", "owner": "Host", "owner_type": "other"},
+            {"offset": 2, "title": "Main Event", "owner": "Host", "owner_type": "other"},
+            {"offset": 3, "title": "Dinner Service", "owner": "Catering", "owner_type": "vendor"},
+            {"offset": 4, "title": "Entertainment", "owner": "DJ", "owner_type": "vendor"},
+            {"offset": 5, "title": "Departure & Cleanup", "owner": "Staff", "owner_type": "staff"},
+        ])
+    
+    # Generate tasks with times
+    for task in common_tasks:
+        hour = base_hour + task["offset"]
+        if hour >= 24:
+            hour -= 24
+        minute = int((task["offset"] % 1) * 60)
+        time_str = f"{int(hour):02d}:{minute:02d}"
+        
+        tasks.append({
+            "id": str(uuid.uuid4()),
+            "time": time_str,
+            "title": task["title"],
+            "owner": task["owner"],
+            "owner_type": task["owner_type"],
+            "status": "pending",
+            "notes": ""
+        })
+    
+    return tasks
+
+def suggest_staff_requirements(event_type: str, guest_count: int) -> list:
+    """Generate smart staff suggestions based on event parameters"""
+    suggestions = []
+    
+    # Waiter calculation
+    if event_type in ['wedding', 'reception', 'engagement']:
+        waiter_ratio = 25  # 1 waiter per 25 guests
+    elif event_type == 'corporate':
+        waiter_ratio = 30  # 1 waiter per 30 guests
+    else:
+        waiter_ratio = 20  # 1 waiter per 20 guests for smaller events
+    
+    waiter_count = max(2, guest_count // waiter_ratio)
+    suggestions.append({
+        "role": "waiter",
+        "count": waiter_count,
+        "wage_type": "fixed",
+        "wage": 500,  # Default wage
+        "shift_start": "",
+        "shift_end": "",
+        "assigned_names": [],
+        "attendance": "pending"
+    })
+    
+    # Supervisor calculation
+    if guest_count > 300:
+        supervisor_count = 2
+    elif guest_count > 150:
+        supervisor_count = 1
+    else:
+        supervisor_count = 0
+    
+    if supervisor_count > 0:
+        suggestions.append({
+            "role": "supervisor",
+            "count": supervisor_count,
+            "wage_type": "fixed",
+            "wage": 1000,
+            "shift_start": "",
+            "shift_end": "",
+            "assigned_names": [],
+            "attendance": "pending"
+        })
+    
+    # Helper calculation
+    helper_count = max(1, guest_count // 100)
+    suggestions.append({
+        "role": "helper",
+        "count": helper_count,
+        "wage_type": "fixed",
+        "wage": 400,
+        "shift_start": "",
+        "shift_end": "",
+        "assigned_names": [],
+        "attendance": "pending"
+    })
+    
+    # Chef if large event
+    if guest_count > 200:
+        suggestions.append({
+            "role": "chef",
+            "count": 1,
+            "wage_type": "fixed",
+            "wage": 1500,
+            "shift_start": "",
+            "shift_end": "",
+            "assigned_names": [],
+            "attendance": "pending"
+        })
+    
+    return suggestions
+
+@api_router.post("/party-plans")
+async def create_party_plan(plan_data: PartyPlanCreate, current_user: dict = Depends(get_current_user)):
+    tenant_filter = await get_tenant_filter(current_user)
+    tenant_id = current_user.get('tenant_id')
+    
+    # Verify booking exists and belongs to tenant
+    booking = await db.bookings.find_one({"id": plan_data.booking_id, **tenant_filter}, {"_id": 0})
+    if not booking:
+        raise HTTPException(status_code=404, detail="Booking not found")
+    
+    # Check booking status - only allow plans for confirmed/enquiry bookings, not cancelled
+    if booking.get('status') == 'cancelled':
+        raise HTTPException(status_code=400, detail="Cannot create plan for cancelled booking")
+    
+    # Check for existing plan (enforce uniqueness)
+    existing = await db.party_plans.find_one({"booking_id": plan_data.booking_id, **tenant_filter}, {"_id": 0})
     if existing:
-        raise HTTPException(status_code=400, detail="Party plan already exists for this booking")
+        raise HTTPException(status_code=400, detail="Party plan already exists for this booking. Use PUT to update.")
     
-    # Calculate total staff charges
-    total_staff_charges = sum(s.get('charge', 0) for s in plan_data.staff_assignments)
+    # Create booking snapshot for sync tracking
+    booking_snapshot = {
+        "event_date": booking.get('event_date'),
+        "slot": booking.get('slot'),
+        "guest_count": booking.get('guest_count'),
+        "hall_id": booking.get('hall_id'),
+        "event_type": booking.get('event_type'),
+        "total_amount": booking.get('total_amount')
+    }
     
+    # Generate default timeline if not provided
+    timeline_tasks = plan_data.timeline_tasks
+    if not timeline_tasks:
+        timeline_tasks = generate_default_timeline(
+            booking.get('event_type', 'custom'),
+            booking.get('slot', 'day'),
+            booking.get('guest_count', 100)
+        )
+    
+    # Calculate staff charges
+    staff_assignments = plan_data.staff_assignments
+    total_staff_charges = 0
+    for staff in staff_assignments:
+        count = staff.get('count', 1)
+        wage = float(staff.get('wage', 0))
+        total_staff_charges += count * wage
+    
+    # Build plan document
     plan = PartyPlan(
         booking_id=plan_data.booking_id,
-        dj_vendor_id=plan_data.dj_vendor_id,
-        decor_vendor_id=plan_data.decor_vendor_id,
-        catering_vendor_id=plan_data.catering_vendor_id,
+        tenant_id=tenant_id,
+        dj_vendor_id=plan_data.dj_vendor_id if plan_data.dj_vendor_id != 'none' else None,
+        decor_vendor_id=plan_data.decor_vendor_id if plan_data.decor_vendor_id != 'none' else None,
+        catering_vendor_id=plan_data.catering_vendor_id if plan_data.catering_vendor_id != 'none' else None,
         custom_vendors=plan_data.custom_vendors,
-        staff_assignments=plan_data.staff_assignments,
+        staff_assignments=staff_assignments,
         total_staff_charges=total_staff_charges,
-        notes=plan_data.notes
+        timeline_tasks=timeline_tasks,
+        inventory=plan_data.inventory if hasattr(plan_data, 'inventory') else {},
+        setup_notes=plan_data.setup_notes if hasattr(plan_data, 'setup_notes') else "",
+        menu_execution=plan_data.menu_execution if hasattr(plan_data, 'menu_execution') else {},
+        documents=plan_data.documents if hasattr(plan_data, 'documents') else [],
+        activity_log=[{
+            "id": str(uuid.uuid4()),
+            "action": "Plan created",
+            "user": current_user.get('email'),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "details": {}
+        }],
+        notes=plan_data.notes,
+        booking_snapshot=booking_snapshot,
+        booking_changed=False,
+        change_warnings=[]
     )
     
     plan_doc = plan.model_dump()
     plan_doc['created_at'] = plan_doc['created_at'].isoformat()
     plan_doc['updated_at'] = plan_doc['updated_at'].isoformat()
-    await db.party_plans.insert_one(plan_doc)
     
-    # Auto-create expense for staff charges if > 0
+    # Get payments for readiness calculation
+    payments = await db.payments.find({"booking_id": plan_data.booking_id}, {"_id": 0}).to_list(100)
+    
+    # Calculate readiness
+    score, breakdown = calculate_readiness_score(plan_doc, booking, payments)
+    plan_doc['readiness_score'] = score
+    plan_doc['readiness_breakdown'] = breakdown
+    
+    await db.party_plans.insert_one(plan_doc)
+    plan_doc.pop('_id', None)
+    
+    # Auto-create staff expense if staff charges > 0
     if total_staff_charges > 0:
-        staff_expense = PartyExpense(
+        expense_doc = PartyExpense(
             booking_id=plan_data.booking_id,
-            expense_name="Staff & Waiter Charges",
+            category="Staff",
+            description="Staff wages from party planning",
             amount=total_staff_charges,
             notes="Auto-generated from party planning"
-        )
-        expense_doc = staff_expense.model_dump()
+        ).model_dump()
+        expense_doc['tenant_id'] = tenant_id
         expense_doc['created_at'] = expense_doc['created_at'].isoformat()
         await db.party_expenses.insert_one(expense_doc)
-        
-        # Update booking expenses
-        all_expenses = await db.party_expenses.find({"booking_id": plan_data.booking_id}, {"_id": 0}).to_list(100)
-        total_expenses = sum(e['amount'] for e in all_expenses)
-        net_profit = booking['total_amount'] - total_expenses
-        
-        await db.bookings.update_one(
-            {"id": plan_data.booking_id},
-            {"$set": {
-                "total_expenses": total_expenses,
-                "net_profit": net_profit,
-                "updated_at": datetime.now(timezone.utc).isoformat()
-            }}
-        )
     
-    # Link vendors to booking
-    all_vendors = [plan_data.dj_vendor_id, plan_data.decor_vendor_id, plan_data.catering_vendor_id] + plan_data.custom_vendors
-    linked_vendors = [v for v in all_vendors if v]
-    if linked_vendors:
-        await db.bookings.update_one(
-            {"id": plan_data.booking_id},
-            {"$set": {"linked_vendors": linked_vendors}}
-        )
-    
-    plan_doc.pop('_id', None)
     return plan_doc
 
 @api_router.put("/party-plans/{booking_id}")
