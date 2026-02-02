@@ -266,8 +266,20 @@ const VendorsPage = () => {
                                 <DialogClose asChild>
                                     <Button type="button" variant="outline" className="border-slate-200 rounded-xl">Cancel</Button>
                                 </DialogClose>
-                                <Button type="submit" className="bg-gradient-to-r from-purple-600 to-pink-500 text-white rounded-xl" data-testid="save-vendor-btn">
-                                    {editingVendor ? 'Update' : 'Create'} Vendor
+                                <Button 
+                                    type="submit" 
+                                    disabled={saving}
+                                    className="bg-gradient-to-r from-purple-600 to-pink-500 text-white rounded-xl min-w-[140px]" 
+                                    data-testid="save-vendor-btn"
+                                >
+                                    {saving ? (
+                                        <>
+                                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                            Saving...
+                                        </>
+                                    ) : (
+                                        `${editingVendor ? 'Update' : 'Create'} Vendor`
+                                    )}
                                 </Button>
                             </div>
                         </form>
