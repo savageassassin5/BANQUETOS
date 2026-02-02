@@ -454,5 +454,3 @@ export function SkeletonPartyPlanning() {
     </div>
   );
 }
-
-export { Skeleton };
