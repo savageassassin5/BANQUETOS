@@ -143,13 +143,27 @@ const VendorsPage = () => {
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center h-64">
-                <motion.div
-                    animate={{ rotate: 360 }}
-                    transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                    className="w-12 h-12 rounded-full border-4 border-purple-200 border-t-purple-600"
-                />
-            </div>
+            <motion.div 
+                className="space-y-6" 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                data-testid="vendors-page"
+            >
+                {/* Header Skeleton */}
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                    <div className="space-y-2">
+                        <div className="h-10 w-32 bg-slate-100 rounded animate-pulse" />
+                        <div className="h-4 w-48 bg-slate-100 rounded animate-pulse" />
+                    </div>
+                    <div className="h-10 w-32 bg-slate-100 rounded-xl animate-pulse" />
+                </div>
+                <SkeletonFilterBar />
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {Array.from({ length: 6 }).map((_, i) => (
+                        <SkeletonVendorCard key={i} />
+                    ))}
+                </div>
+            </motion.div>
         );
     }
 
