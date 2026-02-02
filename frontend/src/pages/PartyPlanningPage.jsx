@@ -1260,7 +1260,7 @@ const PartyPlanningPage = () => {
                                 <div className="text-center py-8 text-slate-500">
                                     <Users className="h-10 w-10 mx-auto mb-2 text-slate-300" />
                                     <p className="text-sm">No staff assigned yet.</p>
-                                    <p className="text-xs text-slate-400 mt-1">Click "Smart Suggest" for intelligent recommendations based on guest count.</p>
+                                    <p className="text-xs text-slate-400 mt-1">Click &quot;Smart Suggest&quot; for intelligent recommendations based on guest count.</p>
                                 </div>
                             ) : (
                                 <div className="space-y-3">
