@@ -228,25 +228,25 @@ const DashboardPage = () => {
                         whileHover={{ y: -4, scale: 1.02 }}
                         transition={{ type: "spring", stiffness: 400 }}
                     >
-                        <Card className={`relative overflow-hidden bg-gradient-to-br ${stat.bgGradient} border-0 shadow-lg hover:shadow-xl transition-all duration-300`} data-testid={`stat-${stat.title.toLowerCase().replace(/\s/g, '-')}`}>
+                        <Card className={`relative overflow-hidden bg-[#1e1a2e] border border-purple-800/30 shadow-lg shadow-purple-900/20 hover:shadow-xl hover:border-purple-700/50 transition-all duration-300`} data-testid={`stat-${stat.title.toLowerCase().replace(/\s/g, '-')}`}>
                             <div className={`absolute top-0 right-0 w-32 h-32 bg-gradient-to-br ${stat.gradient} opacity-10 rounded-full -mr-16 -mt-16`} />
                             <CardContent className="p-6 relative">
                                 <div className="flex items-center justify-between">
                                     <div>
-                                        <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">{stat.title}</p>
-                                        <p className="text-2xl font-bold text-slate-800 mt-1">{stat.value}</p>
+                                        <p className="text-xs font-medium text-purple-300/60 uppercase tracking-wider">{stat.title}</p>
+                                        <p className="text-2xl font-bold text-white mt-1">{stat.value}</p>
                                     </div>
                                     <motion.div 
-                                        className={`p-3 rounded-xl ${stat.iconBg}`}
+                                        className={`p-3 rounded-xl bg-purple-900/50`}
                                         whileHover={{ rotate: 10, scale: 1.1 }}
                                     >
                                         <stat.icon className={`h-6 w-6 ${stat.iconColor}`} />
                                     </motion.div>
                                 </div>
                                 <div className="flex items-center mt-4 text-xs">
-                                    <TrendingUp className={`h-3 w-3 mr-1 ${stat.trend.startsWith('+') ? 'text-emerald-500' : 'text-rose-500'}`} />
-                                    <span className={stat.trend.startsWith('+') ? 'text-emerald-600' : 'text-rose-600'}>{stat.trend}</span>
-                                    <span className="text-slate-400 ml-1">vs last month</span>
+                                    <TrendingUp className={`h-3 w-3 mr-1 ${stat.trend.startsWith('+') ? 'text-emerald-400' : 'text-rose-400'}`} />
+                                    <span className={stat.trend.startsWith('+') ? 'text-emerald-400' : 'text-rose-400'}>{stat.trend}</span>
+                                    <span className="text-purple-400/60 ml-1">vs last month</span>
                                 </div>
                             </CardContent>
                         </Card>
@@ -257,22 +257,22 @@ const DashboardPage = () => {
             {/* Enquiries Alert */}
             {stats?.new_enquiries > 0 && (
                 <motion.div variants={itemVariants}>
-                    <Card className="bg-gradient-to-r from-amber-50 to-orange-50 border-amber-200 shadow-lg">
+                    <Card className="bg-gradient-to-r from-amber-900/30 to-orange-900/30 border-amber-700/30 shadow-lg">
                         <CardContent className="p-4 flex items-center justify-between">
                             <div className="flex items-center gap-3">
                                 <motion.div 
-                                    className="p-2 bg-amber-100 rounded-xl"
+                                    className="p-2 bg-amber-500/20 rounded-xl"
                                     animate={{ scale: [1, 1.1, 1] }}
                                     transition={{ duration: 2, repeat: Infinity }}
                                 >
-                                    <MessageSquare className="h-5 w-5 text-amber-600" />
+                                    <MessageSquare className="h-5 w-5 text-amber-400" />
                                 </motion.div>
-                                <span className="text-slate-700">
-                                    You have <span className="font-bold text-amber-600">{stats.new_enquiries}</span> new enquiries awaiting response
+                                <span className="text-purple-200">
+                                    You have <span className="font-bold text-amber-400">{stats.new_enquiries}</span> new enquiries awaiting response
                                 </span>
                             </div>
                             <Link to="/dashboard/enquiries">
-                                <Button variant="ghost" size="sm" className="text-amber-600 hover:text-amber-700 hover:bg-amber-100 rounded-xl">
+                                <Button variant="ghost" size="sm" className="text-amber-400 hover:text-amber-300 hover:bg-amber-500/20 rounded-xl">
                                     View All <ArrowUpRight className="ml-1 h-4 w-4" />
                                 </Button>
                             </Link>
@@ -284,11 +284,11 @@ const DashboardPage = () => {
             {/* Charts Row */}
             <motion.div variants={itemVariants} className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Revenue Chart */}
-                <Card className="bg-white shadow-lg border-0 rounded-2xl overflow-hidden">
-                    <CardHeader className="border-b border-slate-100 bg-gradient-to-r from-purple-50 to-pink-50">
-                        <CardTitle className="font-heading text-slate-800 text-lg flex items-center gap-2">
-                            <div className="p-2 bg-purple-100 rounded-lg">
-                                <TrendingUp className="h-4 w-4 text-purple-600" />
+                <Card className="bg-[#1e1a2e] shadow-lg shadow-purple-900/20 border border-purple-800/30 rounded-2xl overflow-hidden">
+                    <CardHeader className="border-b border-purple-800/30 bg-purple-900/30">
+                        <CardTitle className="font-heading text-white text-lg flex items-center gap-2">
+                            <div className="p-2 bg-purple-500/20 rounded-lg">
+                                <TrendingUp className="h-4 w-4 text-purple-400" />
                             </div>
                             Revenue Overview
                         </CardTitle>
