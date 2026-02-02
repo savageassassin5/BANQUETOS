@@ -1552,23 +1552,30 @@ const PartyPlanningPage = () => {
                     </Tabs>
 
                     {/* Footer Actions */}
-                    <div className="flex justify-end gap-3 pt-4 border-t mt-4">
-                        <DialogClose asChild>
-                            <Button variant="outline">Cancel</Button>
-                        </DialogClose>
-                        <Button onClick={handleSavePlan} disabled={saving} className="bg-fuchsia-600 hover:bg-fuchsia-700">
-                            {saving ? (
-                                <>
-                                    <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full mr-2" />
-                                    Saving...
-                                </>
-                            ) : (
-                                <>
-                                    <Save className="h-4 w-4 mr-2" />
-                                    {hasPlan ? 'Update Plan' : 'Create Plan'}
-                                </>
-                            )}
-                        </Button>
+                    <div className="flex items-center justify-between gap-3 pt-4 border-t mt-4">
+                        <SaveFeedback status={saveStatus} />
+                        <div className="flex gap-3">
+                            <DialogClose asChild>
+                                <Button variant="outline">Cancel</Button>
+                            </DialogClose>
+                            <Button 
+                                onClick={handleSavePlan} 
+                                disabled={saving} 
+                                className="bg-fuchsia-600 hover:bg-fuchsia-700 min-w-[140px]"
+                            >
+                                {saving ? (
+                                    <>
+                                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                        Saving...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Save className="h-4 w-4 mr-2" />
+                                        {hasPlan ? 'Update Plan' : 'Create Plan'}
+                                    </>
+                                )}
+                            </Button>
+                        </div>
                     </div>
                 </DialogContent>
             </Dialog>
