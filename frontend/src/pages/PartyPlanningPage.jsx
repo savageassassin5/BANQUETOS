@@ -1214,76 +1214,210 @@ const PartyPlanningPage = () => {
                             </details>
                         </TabsContent>
 
-                        {/* Staff Tab */}
+                        {/* Staff Tab - Enhanced */}
                         <TabsContent value="staff" className="space-y-4">
-                            <div className="flex items-center justify-between">
-                                <h3 className="font-medium text-gray-900">Staff Assignments</h3>
-                                <div className="flex gap-2">
-                                    <Button variant="outline" size="sm" onClick={applyStaffSuggestions}>
-                                        <Sparkles className="h-4 w-4 mr-1" />
-                                        Smart Suggest
-                                    </Button>
-                                    <Button variant="outline" size="sm" onClick={addStaffMember}>
-                                        <Plus className="h-4 w-4 mr-1" />
-                                        Add Staff
-                                    </Button>
-                                </div>
-                            </div>
-
-                            {planForm.staff_assignments.length === 0 ? (
-                                <div className="text-center py-8 text-gray-500">
-                                    <Users className="h-10 w-10 mx-auto mb-2 text-gray-300" />
-                                    <p className="text-sm">No staff assigned. Click "Smart Suggest" for recommendations.</p>
-                                </div>
-                            ) : (
-                                <div className="space-y-3">
-                                    {planForm.staff_assignments.map((staff, index) => (
-                                        <motion.div
-                                            key={index}
-                                            initial={{ opacity: 0, x: -20 }}
-                                            animate={{ opacity: 1, x: 0 }}
-                                            className="bg-gray-50 rounded-xl p-4"
-                                        >
-                                            <div className="grid grid-cols-2 md:grid-cols-5 gap-3 items-center">
-                                                <Select value={staff.role} onValueChange={v => updateStaffMember(index, 'role', v)}>
-                                                    <SelectTrigger>
-                                                        <SelectValue placeholder="Role" />
-                                                    </SelectTrigger>
-                                                    <SelectContent>
-                                                        {staffRoles.map(role => (
-                                                            <SelectItem key={role.value} value={role.value}>{role.label}</SelectItem>
-                                                        ))}
-                                                    </SelectContent>
-                                                </Select>
-                                                <Input
-                                                    type="number"
-                                                    min="1"
-                                                    placeholder="Count"
-                                                    value={staff.count || 1}
-                                                    onChange={e => updateStaffMember(index, 'count', e.target.value)}
-                                                />
-                                                <Input
-                                                    type="number"
-                                                    placeholder="Wage"
-                                                    value={staff.wage || ''}
-                                                    onChange={e => updateStaffMember(index, 'wage', e.target.value)}
-                                                />
-                                                <div className="text-sm text-gray-500">
-                                                    Total: {formatCurrency((parseInt(staff.count) || 1) * (parseFloat(staff.wage) || 0))}
-                                                </div>
-                                                <Button variant="ghost" size="sm" onClick={() => removeStaffMember(index)} className="text-red-500">
-                                                    <Trash2 className="h-4 w-4" />
-                                                </Button>
-                                            </div>
-                                        </motion.div>
+                            {/* Staff Warnings */}
+                            {staffingWarnings.length > 0 && (
+                                <div className="space-y-2">
+                                    {staffingWarnings.map((warning, i) => (
+                                        <IntelligenceCue 
+                                            key={i}
+                                            type="warning" 
+                                            message={warning.message}
+                                            dismissible={true}
+                                        />
                                     ))}
                                 </div>
                             )}
 
-                            <div className="bg-fuchsia-50 rounded-xl p-4 flex items-center justify-between">
-                                <span className="font-medium text-fuchsia-800">Total Staff Cost</span>
-                                <span className="text-xl font-bold text-fuchsia-600">{formatCurrency(totalStaffCharges)}</span>
+                            {/* Staff Summary Bar */}
+                            <div className="bg-slate-50 rounded-xl p-3 flex flex-wrap items-center justify-between gap-3">
+                                <div className="flex items-center gap-4 text-sm">
+                                    <span className="text-slate-500">Roles: <strong className="text-slate-700">{planForm.staff_assignments.length}</strong></span>
+                                    <span className="text-slate-500">Total Staff: <strong className="text-slate-700">
+                                        {planForm.staff_assignments.reduce((sum, s) => sum + (parseInt(s.count) || 0), 0)}
+                                    </strong></span>
+                                    <span className="text-slate-500">Total Cost: <strong className="text-fuchsia-600">{formatCurrency(totalStaffCost)}</strong></span>
+                                </div>
+                                <div className="flex gap-2">
+                                    <Button 
+                                        variant="outline" 
+                                        size="sm" 
+                                        onClick={generateSmartStaffPlan}
+                                        className="bg-gradient-to-r from-fuchsia-50 to-pink-50 border-fuchsia-200 text-fuchsia-700 hover:from-fuchsia-100 hover:to-pink-100"
+                                    >
+                                        <Sparkles className="h-4 w-4 mr-1" />
+                                        Smart Suggest
+                                    </Button>
+                                    <Button variant="outline" size="sm" onClick={addStaffMember} className="bg-white">
+                                        <Plus className="h-4 w-4 mr-1" />
+                                        Add Role
+                                    </Button>
+                                </div>
                             </div>
+
+                            {/* Smart Suggest Info */}
+                            {selectedBooking && planForm.staff_assignments.length > 0 && (
+                                <div className="text-xs text-slate-500 bg-slate-50 rounded-lg px-3 py-2">
+                                    Suggested for <strong>{selectedBooking.guest_count || 100}</strong> guests 
+                                    (<span className="capitalize">{selectedBooking.event_type || 'event'}</span>, {selectedBooking.time_slot || 'Day'} slot)
+                                </div>
+                            )}
+
+                            {planForm.staff_assignments.length === 0 ? (
+                                <div className="text-center py-8 text-slate-500">
+                                    <Users className="h-10 w-10 mx-auto mb-2 text-slate-300" />
+                                    <p className="text-sm">No staff assigned yet.</p>
+                                    <p className="text-xs text-slate-400 mt-1">Click "Smart Suggest" for intelligent recommendations based on guest count.</p>
+                                </div>
+                            ) : (
+                                <div className="space-y-3">
+                                    {planForm.staff_assignments.map((staff, index) => {
+                                        const roleInfo = staffRoles.find(r => r.value === staff.role);
+                                        const Icon = roleInfo?.icon || User;
+                                        return (
+                                            <motion.div
+                                                key={index}
+                                                initial={{ opacity: 0, x: -20 }}
+                                                animate={{ opacity: 1, x: 0 }}
+                                                className="bg-white border border-slate-200 rounded-xl p-4"
+                                            >
+                                                <div className="flex items-start gap-4">
+                                                    {/* Role Icon & Selector */}
+                                                    <div className="flex items-center gap-3 flex-1">
+                                                        <div className="p-2 bg-slate-100 rounded-lg">
+                                                            <Icon className="h-5 w-5 text-slate-600" />
+                                                        </div>
+                                                        <div className="flex-1 space-y-3">
+                                                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 items-center">
+                                                                <Select value={staff.role} onValueChange={v => updateStaffMember(index, 'role', v)}>
+                                                                    <SelectTrigger className="bg-slate-50">
+                                                                        <SelectValue placeholder="Role" />
+                                                                    </SelectTrigger>
+                                                                    <SelectContent>
+                                                                        {staffRoles.map(role => (
+                                                                            <SelectItem key={role.value} value={role.value}>{role.label}</SelectItem>
+                                                                        ))}
+                                                                    </SelectContent>
+                                                                </Select>
+
+                                                                {/* Count with +/- buttons */}
+                                                                <div className="flex items-center gap-1">
+                                                                    <Button 
+                                                                        variant="outline" 
+                                                                        size="sm" 
+                                                                        className="h-9 w-9 p-0"
+                                                                        onClick={() => decrementStaffCount(index)}
+                                                                    >
+                                                                        <Minus className="h-4 w-4" />
+                                                                    </Button>
+                                                                    <Input
+                                                                        type="number"
+                                                                        min="1"
+                                                                        className="w-16 text-center h-9"
+                                                                        value={staff.count || 1}
+                                                                        onChange={e => updateStaffMember(index, 'count', parseInt(e.target.value) || 1)}
+                                                                    />
+                                                                    <Button 
+                                                                        variant="outline" 
+                                                                        size="sm" 
+                                                                        className="h-9 w-9 p-0"
+                                                                        onClick={() => incrementStaffCount(index)}
+                                                                    >
+                                                                        <Plus className="h-4 w-4" />
+                                                                    </Button>
+                                                                </div>
+
+                                                                {/* Wage */}
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className="text-xs text-slate-500">₹</span>
+                                                                    <Input
+                                                                        type="number"
+                                                                        placeholder="Wage"
+                                                                        className="h-9"
+                                                                        value={staff.wage || ''}
+                                                                        onChange={e => updateStaffMember(index, 'wage', parseFloat(e.target.value) || 0)}
+                                                                    />
+                                                                    <Select 
+                                                                        value={staff.wage_type || 'fixed'} 
+                                                                        onValueChange={v => updateStaffMember(index, 'wage_type', v)}
+                                                                    >
+                                                                        <SelectTrigger className="w-24 h-9">
+                                                                            <SelectValue />
+                                                                        </SelectTrigger>
+                                                                        <SelectContent>
+                                                                            <SelectItem value="fixed">Fixed</SelectItem>
+                                                                            <SelectItem value="hourly">Hourly</SelectItem>
+                                                                        </SelectContent>
+                                                                    </Select>
+                                                                </div>
+
+                                                                {/* Line Total */}
+                                                                <div className="text-right">
+                                                                    <div className="text-sm font-medium text-fuchsia-600">
+                                                                        {formatCurrency((parseInt(staff.count) || 1) * (parseFloat(staff.wage) || 0))}
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+
+                                                            {/* Shift Times */}
+                                                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 items-center">
+                                                                <div className="flex items-center gap-2 col-span-2">
+                                                                    <Clock className="h-4 w-4 text-slate-400" />
+                                                                    <Input
+                                                                        type="time"
+                                                                        className="h-9"
+                                                                        value={staff.shift_start || ''}
+                                                                        onChange={e => updateStaffMember(index, 'shift_start', e.target.value)}
+                                                                    />
+                                                                    <span className="text-slate-400">to</span>
+                                                                    <Input
+                                                                        type="time"
+                                                                        className="h-9"
+                                                                        value={staff.shift_end || ''}
+                                                                        onChange={e => updateStaffMember(index, 'shift_end', e.target.value)}
+                                                                    />
+                                                                </div>
+                                                                <Input
+                                                                    placeholder="Notes (optional)"
+                                                                    className="h-9 col-span-2"
+                                                                    value={staff.notes || ''}
+                                                                    onChange={e => updateStaffMember(index, 'notes', e.target.value)}
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Remove Button */}
+                                                    <Button 
+                                                        variant="ghost" 
+                                                        size="sm" 
+                                                        onClick={() => removeStaffMember(index)} 
+                                                        className="text-slate-400 hover:text-rose-600"
+                                                    >
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </Button>
+                                                </div>
+                                            </motion.div>
+                                        );
+                                    })}
+                                </div>
+                            )}
+
+                            {/* Total Cost Summary */}
+                            <motion.div 
+                                className="bg-gradient-to-r from-fuchsia-50 to-pink-50 border border-fuchsia-200 rounded-xl p-4 flex items-center justify-between"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                            >
+                                <div>
+                                    <span className="font-medium text-fuchsia-800">Total Staff Cost</span>
+                                    <p className="text-xs text-fuchsia-600 mt-0.5">
+                                        {planForm.staff_assignments.reduce((sum, s) => sum + (parseInt(s.count) || 0), 0)} staff across {planForm.staff_assignments.length} roles
+                                    </p>
+                                </div>
+                                <span className="text-2xl font-bold text-fuchsia-600">{formatCurrency(totalStaffCost)}</span>
+                            </motion.div>
                         </TabsContent>
 
                         {/* Timeline Tab */}
