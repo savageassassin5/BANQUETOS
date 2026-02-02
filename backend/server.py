@@ -1934,16 +1934,16 @@ async def update_party_plan(booking_id: str, plan_data: PartyPlanCreate, current
     # Check if booking details changed
     if booking_snapshot:
         if booking_snapshot.get('event_date') != booking.get('event_date'):
-            change_warnings.append(f"Event date changed")
+            change_warnings.append("Event date changed")
             booking_changed = True
         if booking_snapshot.get('slot') != booking.get('slot'):
-            change_warnings.append(f"Slot changed")
+            change_warnings.append("Slot changed")
             booking_changed = True
         if booking_snapshot.get('guest_count') != booking.get('guest_count'):
-            change_warnings.append(f"Guest count changed")
+            change_warnings.append("Guest count changed")
             booking_changed = True
         if booking_snapshot.get('hall_id') != booking.get('hall_id'):
-            change_warnings.append(f"Hall/Venue changed")
+            change_warnings.append("Hall/Venue changed")
             booking_changed = True
     
     # Add activity log entry
