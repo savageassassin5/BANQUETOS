@@ -1650,7 +1650,6 @@ def calculate_readiness_score(plan: dict, booking: dict, payments: list) -> tupl
 def generate_default_timeline(event_type: str, slot: str, guest_count: int) -> list:
     """Generate smart default timeline based on event parameters"""
     tasks = []
-    task_id = 0
     
     # Determine base times based on slot
     if slot == 'day':
