@@ -84,6 +84,7 @@ const VendorsPage = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setSaving(true);
         setSaveStatus('saving');
         try {
             if (editingVendor) {
@@ -100,17 +101,21 @@ const VendorsPage = () => {
         } catch (error) {
             setSaveStatus('error');
             toast.error('Failed to save vendor');
+        } finally {
+            setSaving(false);
         }
     };
 
     const handleDelete = async (id) => {
-        if (!window.confirm('Are you sure you want to delete this vendor?')) return;
+        setDeleting(id);
         try {
             await vendorAPI.delete(id);
             toast.success('Vendor deleted');
             loadVendors();
         } catch (error) {
             toast.error('Failed to delete vendor');
+        } finally {
+            setDeleting(null);
         }
     };
 
