@@ -108,16 +108,34 @@ const DashboardPage = () => {
         visible: { opacity: 1, y: 0, transition: { duration: 0.5 } }
     };
 
+    // Generate intelligence cues based on data
+    const intelligenceCues = React.useMemo(() => {
+        const cues = [];
+        if (stats?.pending_payments > 3) {
+            cues.push({
+                type: 'warning',
+                message: `${stats.pending_payments} pending payments need attention`,
+                subtext: 'Review and follow up to avoid cash flow issues'
+            });
+        }
+        if (stats?.upcoming_events > 0 && stats?.upcoming_events <= 2) {
+            cues.push({
+                type: 'info',
+                message: `${stats.upcoming_events} events coming up soon`,
+                subtext: 'Ensure all preparations are in place'
+            });
+        }
+        return cues;
+    }, [stats]);
+
+    // Check if any bookings are today
+    const todayBookings = stats?.recent_bookings?.filter(b => {
+        const today = new Date().toISOString().split('T')[0];
+        return b.event_date === today;
+    }) || [];
+
     if (loading) {
-        return (
-            <div className="flex items-center justify-center h-64">
-                <motion.div
-                    animate={{ rotate: 360 }}
-                    transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                    className="w-12 h-12 rounded-full border-4 border-purple-200 border-t-purple-600"
-                />
-            </div>
-        );
+        return <SkeletonDashboard />;
     }
 
     return (
