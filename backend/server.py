@@ -915,17 +915,31 @@ def require_admin(current_user: dict):
         raise HTTPException(status_code=403, detail="Admin access required")
     return True
 
+async def get_tenant_config(tenant_id: str) -> dict:
+    """Get tenant configuration from tenant_configs collection"""
+    if not tenant_id:
+        return None
+    config = await db.tenant_configs.find_one({"tenant_id": tenant_id}, {"_id": 0})
+    return config
+
 async def get_effective_features(tenant_id: Optional[str]) -> dict:
-    """Get effective features for a tenant (plan features + overrides)"""
+    """Get effective features for a tenant from tenant_config"""
     if not tenant_id:
         # Super admin has all features
         return {
             "bookings": True, "calendar": True, "halls": True, "menu": True,
             "customers": True, "payments": True, "enquiries": True, "reports": True,
             "vendors": True, "analytics": True, "notifications": True, "expenses": True,
-            "party_planning": True
+            "party_planning": True, "vendor_ledger": True, "staff_planning": True,
+            "profit_tracking": True, "advanced_reports": True
         }
     
+    # First try tenant_config (new system)
+    config = await get_tenant_config(tenant_id)
+    if config and config.get('feature_flags'):
+        return config['feature_flags']
+    
+    # Fallback to old system (plan features + overrides)
     tenant = await db.tenants.find_one({"id": tenant_id}, {"_id": 0})
     if not tenant:
         return {}
@@ -935,7 +949,7 @@ async def get_effective_features(tenant_id: Optional[str]) -> dict:
         "bookings": True, "calendar": True, "halls": True, "menu": True,
         "customers": True, "payments": True, "enquiries": True, "reports": False,
         "vendors": False, "analytics": False, "notifications": False, "expenses": False,
-        "party_planning": False
+        "party_planning": False, "vendor_ledger": False, "staff_planning": False
     }
     
     # Apply plan features if plan exists
@@ -951,7 +965,7 @@ async def get_effective_features(tenant_id: Optional[str]) -> dict:
     return features
 
 async def check_feature_access(current_user: dict, feature: str):
-    """Check if user has access to a feature"""
+    """Check if user has access to a feature - enforces at API level"""
     if current_user.get('role') == 'super_admin':
         return True
     
@@ -961,9 +975,44 @@ async def check_feature_access(current_user: dict, feature: str):
     
     features = await get_effective_features(tenant_id)
     if not features.get(feature, False):
-        raise HTTPException(status_code=403, detail=f"Feature '{feature}' not enabled for your plan")
+        raise HTTPException(status_code=403, detail=f"Feature '{feature}' not enabled for your organization")
     
     return True
+
+async def check_permission(current_user: dict, permission: str):
+    """Check if user's role has a specific permission"""
+    if current_user.get('role') == 'super_admin':
+        return True
+    
+    tenant_id = current_user.get('tenant_id')
+    if not tenant_id:
+        raise HTTPException(status_code=403, detail="No tenant associated")
+    
+    config = await get_tenant_config(tenant_id)
+    if not config or not config.get('permissions'):
+        return True  # No restrictions defined
+    
+    # Map user role to config role
+    role_map = {
+        'admin': 'owner', 'tenant_admin': 'owner', 'owner': 'owner',
+        'manager': 'manager', 'reception': 'reception',
+        'accountant': 'accountant', 'ops': 'ops'
+    }
+    user_role = current_user.get('role', 'custom')
+    config_role = role_map.get(user_role, 'custom')
+    
+    role_perms = config.get('permissions', {}).get(config_role, {})
+    if role_perms.get(permission) == False:
+        raise HTTPException(status_code=403, detail=f"Permission denied: {permission}")
+    
+    return True
+
+async def get_workflow_rule(tenant_id: str, rule: str):
+    """Get a workflow rule value for a tenant"""
+    config = await get_tenant_config(tenant_id)
+    if config and config.get('workflow_rules'):
+        return config['workflow_rules'].get(rule)
+    return None
 
 async def get_tenant_filter(current_user: dict) -> dict:
     """Get MongoDB filter for tenant isolation"""
