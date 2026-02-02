@@ -1,73 +1,86 @@
 <analysis>**original_problem_statement:**
-The user has provided a series of large, sequential feature requests to transform the application.
+The user's initial high-level goals were to convert a single-tenant app into a multi-tenant SaaS, overhaul the landing page, and add intelligence to the party planning module.
 
-1.  **Initial Goal (Completed):** Convert the single-tenant BanquetOS application into a full-fledged, multi-tenant SaaS platform. This involved implementing a Super Admin portal, tenant and plan management, feature flags, role-based access, and migrating the entire data model to be tenant-aware (Phases A-H).
-2.  **Second Goal (Completed):** Perform a world-class upgrade of the public-facing landing page, adding multiple new sections (Features, How it Works, FAQ, etc.) and premium animations using Framer Motion, while keeping the existing brand aesthetic.
-3.  **Current Goal (In Progress):** Execute a multi-phase enhancement of the core application logic, focusing on the login flow and a deep refactor of the Party Planning module to turn it into an Event Operations Brain.
+The work in this session pivoted to a series of specific, detailed UI/UX and feature enhancement requests:
+1.  **Global UI/UX Polish (Completed):** A world-class polish of all admin panel pages without changing layouts. This included adding state-driven UI (status badges), clear save/load feedback, consistent micro-interactions, and an improved visual hierarchy.
+2.  **Skeleton Loading (Completed):** Implement context-aware, high-quality skeleton loading states for all major admin pages (Dashboard, Bookings, Party Planning, etc.) to prevent layout shifts and improve perceived performance.
+3.  **Party Planner Elite Upgrade (Completed):** A deep enhancement of the Vendors and Staff tabs within the Party Planner modal. This involved adding flexible vendor assignment (select, add new, other), smart staff suggestions based on event type, and faster inline editing controls.
+4.  **Dark Theme (Attempted & Reverted):** The agent implemented a comprehensive dark purple theme, but the user rejected it (looksbad), and the agent reverted all changes back to the original light theme.
+5.  **Fix & Upgrade Vendor Section (New & In Progress):** The user reported that the  page is broken (blank screen despite API returning data) and provided a detailed specification to transform it into a professional, accounting-grade module. This includes a vendor directory, a full credit/debit transaction ledger for each vendor, payable/receivable balance tracking, and multiple payment methods.
 
 **PRODUCT REQUIREMENTS (Current Task - Non-Negotiable):**
-*   **Phase 1 - Login Page UI (Completed):** Redesign the login page to be professional and SaaS-ready, removing all demo branding.
-*   **Phase 2 - Party Planning <> Bookings Sync (Completed):** Enforce that a  is the single source of truth. A  is an extension of a booking, cannot exist without one, and must stay in sync with booking details.
-*   **Phase 3 - Party Planning 2.0 (Completed):** Enhance the Party Planning module without changing its UI layout. Add advanced intelligence like:
-    *   **Event Readiness Score:** A percentage-based score indicating preparedness.
-    *   **Run-of-Show Timeline:** Auto-generated task list based on event type.
-    *   **Smart Staff Suggestions:** Recommend staff counts based on guest numbers.
-    *   **Profit Protection Snapshot:** Real-time profit calculation and alerts.
-    *   Vendor/Staff/Inventory management and activity logging.
-*   **Phase 4 - Dashboard Intelligence (Pending):** Enhance the main dashboard with widgets that use the new Party Planning data (e.g., At Risk events based on low readiness scores).
-*   **Phase 5 - Quality & Safety (Pending):** Implement strong validation, ensure reliable state management, and enforce all permissions rigorously.
+*   **Fix the Vendor Section:** The frontend page at  is broken and must be fixed.
+*   **Implement Elite Vendor System:**
+    *   **Data Models:** Create new backend models for , , and  (a full ledger).
+    *   **Balance Logic:** Calculate and display vendor balances as Payable (you owe them) or Receivable (they owe you) based on .
+    *   **APIs:** Implement a full suite of CRUD APIs for vendors and their transactions, ensuring tenant isolation.
+    *   **UI - Vendor Directory:** A list view of all vendors showing their current payable/receivable balance.
+    *   **UI - Vendor Ledger:** A detailed modal/page showing a vendor's full transaction history with filtering capabilities and actions to record payments or add debits/credits.
+    *   **UI - Party Planner Integration:** The vendor tab must allow selecting from the directory, adding new vendors inline, assigning an , and recording payments for that specific booking.
+    *   **UI Rules:** NO layout redesign. All features must be integrated into the existing UI structure.
 
 **User's preferred language**: English
 
 **what currently exists?**
-The application is a functional multi-tenant Banquet Management SaaS platform. It features a Super Admin portal for managing tenants and plans, and a tenant-specific dashboard for banquet operations. A comprehensive data migration was performed to adapt the old data to the new multi-tenant structure. The agent recently completed two major user requests: a complete overhaul of the landing page with modern UI/UX and animations, and a deep refactoring of the login page and the core Party Planning module to be a booking-driven Event Operations Brain with significant added intelligence.
+The application is a functional multi-tenant Banquet Management SaaS platform. In this session, the agent performed a comprehensive UI/UX polish across all admin pages, implementing skeleton loaders, status badges, better user feedback, and micro-animations. The Party Planner modal was significantly upgraded with more intelligent and usable vendor/staff management tabs. An attempt to add a dark theme was made but was rejected by the user and reverted. The application is back to its original light theme, but with all the UI/UX polish enhancements. The agent was investigating why the main Vendors page is not rendering data.
 
 **Last working item**:
-- **Last item agent was working:** The agent just finished implementing Phases 1, 2, and 3 of the latest user request. This involved a complete redesign of the  and a massive enhancement of the  and its corresponding backend logic in . The agent successfully added the booking-driven workflow, Event Readiness Score, smart staff/timeline suggestions, and the profit snapshot. It performed extensive self-testing via curl commands and screenshots to validate the new features.
-- **Status:** IN PROGRESS
-- **Agent Testing Done:** Y
+- **Last item agent was working:** The agent was tasked to fix the broken Vendor section. The user reported that the  page appears as a blank white screen, even though the API returns data. The user then provided a comprehensive set of requirements to not only fix but completely overhaul the vendor management system into an accounting-grade module. The agent had just started investigating by checking the API response and the frontend component code.
+- **Status:** NOT STARTED
+- **Agent Testing Done:** N
 - **Which testing method agent to use?** both
 - **User Testing Done:** N
 
 **All Pending/In progress Issue list**:
-There are no pending bugs. The remaining work consists of completing the user-defined feature phases.
+- **Issue 1: Vendor Page is Broken and Needs Complete Overhaul (P0)**
+  - **Description:** The  page is not rendering any data, showing a blank white area. The backend API  is returning data correctly, indicating a frontend issue. The user's new requirements have escalated this from a simple bug fix to a major feature implementation.
+  - **Attempted fixes:** The agent confirmed the API returns data and viewed the  component but has not yet identified the root cause of the rendering failure.
+  - **Next debug checklist:**
+    1.  Inspect the browser console logs on the  page for any runtime errors in React.
+    2.  Review  to trace the state management of the  data from the API call to the render method. Check for incorrect state updates or conditional rendering logic that might be causing the component to render nothing.
+    3.  Once the rendering issue is fixed, begin implementing the full Elite Vendor System as per the user's detailed requirements.
+  - **Why fix this issue and what will be achieved with the fix?** This is a critical feature for banquet operations. Fixing and upgrading it will provide essential accounting and vendor management capabilities, directly addressing a core business need and a user-reported bug.
+  - **Status:** NOT STARTED
+  - **Is recurring issue?** N
+  - **Should Test frontend/backend/both after fix?** both
+  - **Blocked on other issue:** None. This is the primary blocker.
 
 **In progress Task List**:
-- **Task 1: Complete Party Planning 2.0 & Dashboard Intelligence (P0)**
-    - **Where to resume:** The agent has successfully implemented and tested Phases 1-3. The next step is to begin **Phase 4: Dashboard Intelligence**. This involves updating the main dashboard components to consume and display insights from the newly intelligent Party Planning module (e.g., displaying at-risk events with low readiness scores, pending vendor confirmations, or staff shortages). After that, **Phase 5: Quality & Safety** needs to be addressed by adding robust validation across the new features.
-    - **What will be achieved with this?** This will complete the user's vision of an intelligent operations platform by surfacing critical event data on the main dashboard, making it immediately actionable for the user.
-    - **Status:** IN PROGRESS
-    - **Should Test frontend/backend/both after fix?** both
-    - **Blocked on something:** None
+- **Task 1: Implement Elite Vendor System (P0)**
+  - **Where to resume:** Start by implementing the new backend data models (, , ) in  as specified by the user. Then create the required API endpoints.
+  - **What will be achieved with this?** A fully functional, accounting-grade vendor management system with a directory, transaction ledger, and balance tracking.
+  - **Status:** NOT STARTED
+  - **Should Test frontend/backend/both after fix?** both
+  - **Blocked on something:** Blocked on resolving Issue 1.
 
 **Upcoming and Future Tasks**
-There are no other tasks. The current focus is to complete the final phases of the user's latest request.
+- **Upcoming Tasks:**
+  - **Phase 4 - Dashboard Intelligence (P1):** Enhance the main dashboard with widgets that use the Party Planning data (e.g., At Risk events based on low readiness scores).
+  - **Phase 5 - Quality & Safety (P1):** Implement strong validation, ensure reliable state management, and enforce all permissions rigorously across the newly added features.
+- **Future Tasks:**
+  - **Refactor  (P2):** Break the monolithic  into smaller, modular routers (, , etc.) to improve maintainability.
 
 **Completed work in this session**
-- **Multi-Tenant SaaS Conversion (DONE):** Completed all phases (A-H) of the initial major refactor.
-    - Implemented Super Admin portal () with full CRUD for Tenants and Plans.
-    - Refactored all backend models and APIs to be tenant-aware using .
-    - Implemented a feature flag system based on Plans with tenant-level overrides.
-    - Added Audit Logs, Soft Deletes, CSV Export, and a data migration script.
-- **Landing Page World-Class Upgrade (DONE):**
-    - Completely rewrote  with multiple new, animated sections (Hero, Features, How it Works, FAQ, etc.) using Framer Motion.
-    - Implemented a Book a Demo modal that captures leads as Enquiry records in the database.
-- **Login Page & Party Planning 2.0 (Phases 1-3 DONE):**
-    - **Login Page Redesign:** Rewrote  with a professional, neutral SaaS design.
-    - **Party Planning Sync:** Enforced a strict 1:1 relationship between Bookings and Party Plans, with the booking as the source of truth.
-    - **Party Planning Intelligence:**
-        - Implemented the Event Readiness Score logic.
-        - Created Smart Staff Suggestions and Run-of-Show Timeline generators.
-        - Added a real-time Profit Protection Snapshot with alerts.
-        - Updated  to manage this new complexity within the existing UI layout.
+- **Admin Panel UI/UX Polish:** Enhanced all admin pages (, , , , , etc.) with improved UI states, feedback, micro-interactions, and visual hierarchy without altering layouts.
+- **Skeleton Loading Implementation:** Integrated context-aware skeleton loading states with a smooth shimmer animation across all admin pages to prevent layout jumps.
+- **Party Planner Elite Upgrade:**
+  - **Vendors Tab:** Implemented flexible vendor assignment (select existing, add new inline, Other text input).
+  - **Staff Tab:** Implemented Smart Suggest to generate a full staffing plan (roles, counts, shifts, wages) based on event type and guest count, with understaffing warnings and instant cost calculation.
+- **Reusable Components Created:**
+  - : For consistent status indicators.
+  - : For showing saving/saved states on forms.
+  - : For displaying text-based warnings and info.
+  - : For all skeleton loading states.
+- **Dark Theme Reversion:** Successfully reverted an attempted dark theme implementation at the user's request, restoring the original light theme while keeping all other UI enhancements.
+- **Deployment Health Check:** Ran a health check, which flagged some (likely false positive) issues with config files and a failed dashboard endpoint test, though manual verification showed services were running.
 
 **Earlier issues found/mentioned but not fixed**
-None. The agent has been systematic in addressing and resolving issues as they arose (e.g., the duplicate user data during the seed process was fixed with a migration script).
+- **Deployment Agent Discrepancy:** The deployment agent reported missing  and  config files, but the main agent verified they exist and are populated. It also reported a failed dashboard health check, but manual  tests passed. This suggests a potential issue with the health check script's pathing or timing.
 
 **Known issue recurrence from previous fork**
 - **Issue recurrence in previous fork:** Git repository corruption.
 - **Recurrence count:** 1
-- **Status:** RESOLVED (The agent was able to proceed with its work, and auto-commits appear to have been successful).
+- **Status:** RESOLVED
 
 **Code Architecture**
 
@@ -75,79 +88,84 @@ None. The agent has been systematic in addressing and resolving issues as they a
 **Key Technical Concepts**
 - **Backend:** FastAPI, MongoDB, Pydantic, JWT.
 - **Frontend:** React, React Router, Tailwind CSS, Shadcn UI, Framer Motion.
-- **Architecture:** Multi-Tenancy, Role-Based Access Control (RBAC), Feature Flagging.
-- **Business Logic:** Event Readiness Score, Profit Protection Snapshot, Smart Staff/Timeline Suggestions.
+- **Architecture:** Multi-Tenancy, RBAC, Feature Flagging.
+- **UI/UX Patterns:** Skeleton Loading, State-Driven UI (badges, cues), Optimistic UI (save feedback), Micro-interactions.
 
 **key DB schema**
-- ****: { business_name, plan_id, features_override, status }
-- ****: { name, features: { bookings: bool, ... } }
-- ****: { tenant_id, email, role: super_admin|admin|reception... }
-- ****: { tenant_id, ... } (All business models have )
-- ****: { **booking_id**, **tenant_id**, readiness_score, snapshot: { booking_details, profit }, timeline: [...], staff_plan: [...], vendor_plan: [...] }
+*Existing Schema:*
+- , , , , 
+
+*New Schema Required for Vendor System:*
+- ****: 
+- ****: 
+- ****: 
 
 **changes in tech stack**
 None.
 
 **All files of reference**
-- : The core of all business logic.
-- : The newly upgraded landing page.
-- : The redesigned login page.
-- : The enhanced party planning interface.
-- : Contains all new API client functions.
-- : Manages the complex auth state.
+*Files Created:*
+- 
+- 
+- 
+*Files Heavily Modified:*
+- 
+-  (theme attempt and revert, shimmer animation added)
+-  (major functional upgrade)
+- All pages under  (UI polish and skeleton integration)
+- 
 
 **Areas that need refactoring**:
--  is now over 3,000 lines. While logically organized, breaking it into separate router files (e.g., , , ) would significantly improve maintainability. This is a technical debt item, not a user request.
+-  remains a large monolith that would benefit from being split into separate router files.
+-  has undergone significant changes with the theme attempt/revert and could be cleaned up to remove unused variables or classes.
 
 **key api endpoints**
--  (CRUD)
--  (CRUD)
--  (GET)
--  (POST, with booking sync logic)
--  (PUT)
--  (GET)
--  (GET)
--  (GET)
--  (POST)
--  (GET)
+*New APIs Required for Vendor System:*
+- 
+- 
+- 
+- 
+- 
+- 
+- 
+- 
 
 **Critical Info for New Agent**
-- **Adhere to the Plan:** The user's multi-phase instructions are non-negotiable. Proceed with Phase 4 (Dashboard Intelligence) and Phase 5 (Quality & Safety).
-- **NO UI CHANGES (Except Login):** This is a strict constraint. All new intelligence must be added to the *logic* and *data flow* of existing UI components, not by redesigning layouts.
-- **Booking is Source of Truth:** The entire Party Planning module now revolves around this principle. Ensure all future changes respect this data hierarchy.
-- **Monolithic Backend:** Be aware that all backend code is in . Navigate carefully and add new code in the appropriate logical section.
+- **PRIORITY 1 is the Vendor System:** The user has provided extremely detailed, non-negotiable requirements for fixing and upgrading the Vendor section. This is the main task.
+- **User Rejected Dark Theme:** Do not attempt to re-implement a dark theme. The user explicitly said looksbad and requested a revert. The current light theme with polished elements is the approved direction.
+- **Stick to UI Polish, Not Redesign:** The user has repeatedly emphasized that layouts, colors, and structure should NOT be changed. Enhancements should be made within the existing design framework.
+- **Follow the New Vendor Data Model:** The user specified a precise DB schema for vendors, bookings_vendors, and vendor_transactions. This must be implemented exactly as requested to support the ledger and balance logic.
+- **Vendor Page is BROKEN:** The immediate first step is to debug why  renders a blank screen before starting the new feature implementation.
 
 **documents and test reports created in this job**
-- 
--  (Updated with progress on all major tasks)
-- 
+-  (updated twice to reflect completed UI work)
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  : Initiates a new multi-phase task to overhaul the login page and party planning module.
-2.  : Acknowledges and starts work on Phase 1 (Login page redesign).
-3.  : Completes login page redesign and moves to Phase 2/3 (Party Planning backend models).
-4.  : Implements all new backend APIs for Party Planning 2.0.
-5.  : Rewrites the  to integrate the new booking-driven workflow and advanced features.
-6.  : Tests the new professional  via screenshot.
-7.  : Tests the , confirming bookings are listed correctly.
-8.  : Tests the smart staff suggestions and timeline generation features within the party plan modal.
-9.  : Runs curl commands to test the backend API endpoints for party planning, confirming they work as expected.
-10. : Confirms the booking-plan sync and profit snapshot calculations are working correctly via API tests and takes a final screenshot.
+10. : looksbad i will stick to previous ui - User rejects the dark theme.
+9. : Acknowledges and starts reverting the dark theme.
+8. : no improve skeleton loading - After the revert, user asks to specifically improve the skeleton loading animations.
+7. : Implements improved, context-aware skeletons with a better shimmer animation on the light theme.
+6. : Call Deployer Agent and Run Health Check to Check for Readiness for Deployment - User requests a pre-deployment check.
+5. : Runs health check and finds some potential (but likely false positive) issues.
+4. : vendor section is not working - User reports a new, critical bug.
+3. : Investigates, confirms the API works but the frontend page is blank.
+2. : Provides a very long, detailed specification to fix the broken vendor page and upgrade it to a full accounting-grade vendor management system.
+1. : Acknowledges the new, large task and prepares to start working on it.
 
 **Project Health Check:**
-- **Broken:** None.
+- **Broken:**  is not rendering data.
 - **Mocked:** None.
-- **Needs Refactoring:** The monolithic  is a candidate for refactoring into smaller, modular routers for better long-term maintainability.
+- **Needs Refactoring:**  (monolith),  (cleanup after theme revert).
 
 **3rd Party Integrations**
 - : For PDF generation.
-- : For frontend animations, used extensively on the new landing page.
+- : For frontend animations.
 
 **Testing status**
-- **Testing agent used after significant changes:** YES (for the initial SaaS refactor).
+- **Testing agent used after significant changes:** NO
 - **Troubleshoot agent used after agent stuck in loop:** NO
 - **Test files created:** None.
-- **Known regressions:** None.
+- **Known regressions:** The  page is non-functional.
 
 **Credentials to test flow:**
 - **Super Admin:**  / 
@@ -155,6 +173,5 @@ None.
 - **Tenant Reception:**  / 
 
 **What agent forgot to execute**
-The agent is correctly following the multi-phase plan provided by the user. It has not forgotten anything but has not yet started the final two phases of the current task:
-- **Phase 4: Dashboard Intelligence**
-- **Phase 5: Quality & Safety**</analysis>
+- The agent did not start implementing the previous fork's pending tasks (**Phase 4: Dashboard Intelligence** and **Phase 5: Quality & Safety**) as the user immediately provided new, higher-priority UI tasks. These are now further down the backlog.
+- The agent did not fully resolve the discrepancy from the deployment health check (why it reported missing files and a failing dashboard test when manual checks passed).</analysis>
