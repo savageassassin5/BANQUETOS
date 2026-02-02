@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
     Plus, Trash2, Users, Truck, Music, Palette, ChefHat, User, IndianRupee, 
     CheckCircle, Calendar, Save, AlertTriangle, Clock, RefreshCw, Target,
     FileText, Activity, Sparkles, TrendingUp, AlertCircle, CheckCircle2,
-    Building2, UserCheck, Clipboard, Play, Circle
+    Building2, UserCheck, Clipboard, Play, Circle, Phone, Mail, Minus, X,
+    Camera, Loader2
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
@@ -14,10 +15,83 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from '../components/ui/dialog';
 import { Badge } from '../components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
+import { StatusBadge } from '../components/ui/status-badge';
+import { SaveFeedback, useSaveState } from '../components/ui/save-feedback';
+import { IntelligenceCue } from '../components/ui/intelligence-cue';
+import { SkeletonPartyPlanning, SkeletonEventCard, SkeletonStaffRow, SkeletonVendorRow } from '../components/ui/skeletons';
 import { bookingsAPI, vendorAPI, partyPlanningAPI, customersAPI, hallsAPI } from '../lib/api';
 import { formatCurrency } from '../lib/utils';
 import { toast } from 'sonner';
 import { useAuth } from '../context/AuthContext';
+
+// Vendor category configurations with auto-generated checklist items
+const vendorCategories = {
+    dj_sound: {
+        label: 'DJ / Sound',
+        icon: Music,
+        color: 'purple',
+        checklistItems: ['Confirm playlist with client', 'Confirm arrival time', 'Test sound system']
+    },
+    decor: {
+        label: 'Decoration',
+        icon: Palette,
+        color: 'pink',
+        checklistItems: ['Finalize theme', 'Confirm stage setup time', 'Arrange flower delivery']
+    },
+    catering: {
+        label: 'Catering',
+        icon: ChefHat,
+        color: 'orange',
+        checklistItems: ['Finalize menu', 'Confirm veg/non-veg split', 'Set serving time']
+    },
+    photography: {
+        label: 'Photography',
+        icon: Camera,
+        color: 'indigo',
+        checklistItems: ['Confirm coverage timeline', 'Pre-wedding shoot date']
+    },
+    flower: {
+        label: 'Flowers',
+        icon: Palette,
+        color: 'emerald',
+        checklistItems: ['Confirm flower arrangement', 'Delivery timing']
+    },
+    lighting: {
+        label: 'Lighting',
+        icon: Sparkles,
+        color: 'amber',
+        checklistItems: ['Setup timing', 'Power requirements']
+    },
+    other: {
+        label: 'Other',
+        icon: Truck,
+        color: 'slate',
+        checklistItems: []
+    }
+};
+
+// Vendor status lifecycle
+const vendorStatuses = ['invited', 'confirmed', 'arrived', 'completed', 'paid'];
+
+// Staff suggestion templates based on event type
+const staffTemplates = {
+    wedding: {
+        base: { waiter: 10, chef: 3, helper: 5, supervisor: 2 },
+        perGuest: { waiter: 0.08, helper: 0.03 }
+    },
+    birthday: {
+        base: { waiter: 4, chef: 1, helper: 2, supervisor: 1 },
+        perGuest: { waiter: 0.04, helper: 0.02 }
+    },
+    corporate: {
+        base: { waiter: 6, chef: 2, helper: 3, supervisor: 1 },
+        perGuest: { waiter: 0.05, helper: 0.02 }
+    },
+    default: {
+        base: { waiter: 6, chef: 2, helper: 3, supervisor: 1 },
+        perGuest: { waiter: 0.06, helper: 0.03 }
+    }
+};
 
 const PartyPlanningPage = () => {
     const { user } = useAuth();
