@@ -42,6 +42,7 @@ const VendorsPage = () => {
         base_rate: 0
     });
     const [serviceInput, setServiceInput] = useState('');
+    const [saveStatus, setSaveStatus] = useSaveState();
 
     useEffect(() => {
         loadVendors();
