@@ -1,85 +1,139 @@
 # BanquetOS - Product Requirements Document
 
 ## Overview
-BanquetOS is a multi-tenant SaaS platform for banquet hall management with intelligent event planning and vendor management capabilities.
+BanquetOS is a multi-tenant SaaS platform for banquet hall management with an Elite Super Admin Control Plane.
 
-## Recent Work (Feb 2026)
+## Completed Work (Feb 2026)
 
-### ✅ COMPLETED: Elite Vendor System
+### ✅ Elite Super Admin Control Plane - COMPLETE
 
-#### What Was Built:
-1. **Fixed Vendors Page Blank Screen** 
-   - Root cause: Framer Motion animations stuck at opacity:0
-   - Solution: Added explicit `initial="hidden"` and `animate="visible"` props
+#### 1. Tenant Management
+- Create/edit tenants with country selection (12 countries)
+- Auto-configured timezone, currency, tax type per country
 
-2. **Backend - Elite Vendor Ledger System**
-   - New `VendorTransaction` model with debit/credit/payment types
-   - Full transaction ledger per vendor
-   - Balance calculation: Payable = Debits - Credits - Payments
-   - Multi-tenant isolation with tenant_id
+#### 2. Feature Flags (12 toggles)
+- Bookings, Party Planner, Operations Checklist
+- Vendors, Vendor Ledger, Staff Planning
+- Profit Tracking, Reports, Advanced Reports
+- Event Day Mode, Multi-Hall, Custom Fields
 
-3. **Frontend - Vendor Directory UI**
-   - Balance summary cards (Total Payable, Total Receivable, Net Balance)
-   - Balance status badges on vendor cards (Payable/Receivable/Settled)
-   - Balance filter dropdown
+#### 3. Workflow Rules (7 rules)
+- Advance Required (%)
+- Vendors Mandatory Before Confirm
+- Staff Mandatory Before Event
+- Lock Editing Hours Before Event
+- Discount Approval Required
+- Profit Margin Warning (%)
+- Vendor Unpaid Warning (Days)
 
-4. **Frontend - Vendor Ledger Modal**
-   - Transaction history table with type icons
-   - Summary stats (Debits, Credits, Payments, Balance)
-   - Filter tabs (All/Debits/Credits/Payments)
-   
-5. **Frontend - Transaction Entry Form**
-   - Type selector (Debit/Credit/Payment)
-   - Payment methods: Cash, UPI, Bank Transfer, Cheque, Card
-   - Reference ID field for UTR/Cheque numbers
-   - Notes field
+#### 4. Role Permissions Matrix
+- 6 roles: Owner, Manager, Reception, Accountant, Ops, Custom
+- 11 permissions per role (view/edit bookings, profit, vendors, etc.)
+- Grant All / Revoke All shortcuts
 
-#### API Endpoints:
-- `GET /api/vendors/directory` - Vendor list with balance info
-- `GET /api/vendors/{id}/ledger` - Transaction history
-- `POST /api/vendors/{id}/transactions` - Record transaction
+#### 5. Event Templates
+- Default settings per event type (Wedding, Birthday, Corporate, etc.)
+- Default advance %, profit target %
 
-#### Testing Status: ✅ PASSED (100%)
-- Backend: 12/12 tests passed
-- Frontend: All core features verified
-- Bug fixed: Vendor model tenant_id for multi-tenant isolation
+#### 6. Custom Fields (No-Code)
+- Field types: Text, Number, Date, Dropdown
+- Required/optional flag
+- Role-based visibility
+
+#### 7. UI Controls
+- Tab visibility (Profit, Staff, Vendors, Checklist)
+- Label customization (rename modules)
+- Read-only modules
+
+#### 8. Financial Controls
+- Payment methods (Cash, UPI, Bank, Cheque, Card)
+- Tax type & rate
+- Discount limits per role
+- Vendor advance requirements
+- Rounding rules
+
+#### 9. Data Governance
+- Audit logs toggle
+- Soft delete option
+- Data export permissions
+- Demo mode
+- Data retention period
+- Reset tenant data (with confirmation)
+
+#### 10. Config Versioning
+- Version tracking per config change
+- Rollback to previous versions
+- Last 10 versions stored
+
+### Backend Schema: `tenant_config`
+```javascript
+{
+  tenant_id: string,
+  version: number,
+  last_updated: datetime,
+  country: string,
+  timezone: string,
+  currency: string,
+  feature_flags: { bookings: bool, ... },
+  workflow_rules: { advance_required_percent: int, ... },
+  permissions: { owner: {...}, manager: {...}, ... },
+  event_templates: [...],
+  custom_fields: [...],
+  ui_visibility: {...},
+  financial_controls: {...},
+  data_governance: {...},
+  previous_versions: [...]
+}
+```
+
+### API Endpoints Added
+- `GET /api/superadmin/countries` - Country configs
+- `GET /api/superadmin/tenants/:id/config` - Get tenant config
+- `PUT /api/superadmin/tenants/:id/config` - Update config
+- `PUT /api/superadmin/tenants/:id/config/feature-flags` - Quick flag update
+- `PUT /api/superadmin/tenants/:id/config/workflow-rules` - Quick rules update
+- `PUT /api/superadmin/tenants/:id/config/permissions` - Update permissions
+- `GET /api/superadmin/tenants/:id/config/versions` - Version history
+- `POST /api/superadmin/tenants/:id/config/rollback` - Rollback config
+- `POST /api/superadmin/tenants/:id/reset-data` - Reset tenant data
+- `GET /api/config/sync` - Tenant app config sync
+- `GET /api/config/check-version` - Check for updates
+
+### Frontend Pages Created
+- `/superadmin/feature-flags`
+- `/superadmin/workflow-rules`
+- `/superadmin/permissions`
+- `/superadmin/templates`
+- `/superadmin/custom-fields`
+- `/superadmin/ui-controls`
+- `/superadmin/financial`
+- `/superadmin/data-governance`
+
+### Key Principles Enforced
+✅ Super Admin NEVER edits tenant data directly
+✅ All changes are CONFIG-DRIVEN
+✅ Version-based sync for instant propagation
+✅ Complete tenant isolation (tenant_id in every query)
+✅ Rollback support for safety
 
 ---
-
-## Pending Tasks
-
-### P0: Party Planner Vendor Tab Integration
-- [ ] Select vendor from directory dropdown
-- [ ] Set agreed amount & tax
-- [ ] Record payments directly from assignment
-
-### P1: Dashboard Intelligence
-- [ ] At-risk events widget based on readiness scores
-- [ ] Unpaid vendor alerts
-
-### P2: Refactoring
-- [ ] Split server.py into modular routers
-- [ ] Clean up index.css
-
----
-
-## Technical Architecture
-```
-/app/
-├── backend/
-│   ├── server.py              # FastAPI with elite vendor system
-│   └── tests/
-│       └── test_elite_vendor_system.py
-└── frontend/
-    └── src/
-        ├── lib/api.js         # Vendor ledger APIs
-        └── pages/
-            └── VendorsPage.jsx # Elite vendor UI
-```
 
 ## Test Credentials
+- Super Admin: superadmin@banquetos.com / superadmin123
 - Tenant Admin: admin@mayurbanquet.com / admin123
-- Super Admin: super_admin@banquetos.com / superadmin123
 
-## Test Data
-- DJ SANJ vendor: ₹15,000 debit, ₹5,000 payment = ₹10,000 payable
+## Country Configurations (12 Supported)
+| Country | Timezone | Currency | Tax Type |
+|---------|----------|----------|----------|
+| India | Asia/Kolkata | INR (₹) | GST 18% |
+| UAE | Asia/Dubai | AED | VAT 5% |
+| USA | America/New_York | USD ($) | None |
+| UK | Europe/London | GBP (£) | VAT 20% |
+| Canada | America/Toronto | CAD ($) | GST 5% |
+| Australia | Australia/Sydney | AUD ($) | GST 10% |
+| Singapore | Asia/Singapore | SGD ($) | GST 9% |
+| Saudi Arabia | Asia/Riyadh | SAR | VAT 15% |
+| Malaysia | Asia/Kuala_Lumpur | MYR (RM) | SST 6% |
+| Indonesia | Asia/Jakarta | IDR (Rp) | VAT 11% |
+| Philippines | Asia/Manila | PHP (₱) | VAT 12% |
+| Qatar | Asia/Qatar | QAR | None |
