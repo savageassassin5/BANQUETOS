@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-    LayoutDashboard, Building2, CreditCard, Users, LogOut, Menu, X, 
-    ChevronRight, Shield, Settings
+    LayoutDashboard, Building2, CreditCard, LogOut, Menu, X, 
+    ChevronRight, Shield, ToggleRight, Workflow, Users2, FileText,
+    FormInput, Eye, Wallet, Database, Settings
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { useAuth } from '../context/AuthContext';
@@ -11,7 +12,17 @@ import { useAuth } from '../context/AuthContext';
 const navItems = [
     { path: '/superadmin', icon: LayoutDashboard, label: 'Dashboard', color: 'from-violet-500 to-purple-500' },
     { path: '/superadmin/tenants', icon: Building2, label: 'Tenants', color: 'from-blue-500 to-cyan-500' },
-    { path: '/superadmin/plans', icon: CreditCard, label: 'Plans', color: 'from-emerald-500 to-teal-500' },
+    { divider: true, label: 'CONFIGURATION' },
+    { path: '/superadmin/feature-flags', icon: ToggleRight, label: 'Feature Flags', color: 'from-emerald-500 to-teal-500' },
+    { path: '/superadmin/workflow-rules', icon: Workflow, label: 'Workflow Rules', color: 'from-amber-500 to-orange-500' },
+    { path: '/superadmin/permissions', icon: Users2, label: 'Permissions', color: 'from-pink-500 to-rose-500' },
+    { path: '/superadmin/templates', icon: FileText, label: 'Templates', color: 'from-indigo-500 to-blue-500' },
+    { path: '/superadmin/custom-fields', icon: FormInput, label: 'Custom Fields', color: 'from-cyan-500 to-blue-500' },
+    { path: '/superadmin/ui-controls', icon: Eye, label: 'UI Controls', color: 'from-purple-500 to-fuchsia-500' },
+    { path: '/superadmin/financial', icon: Wallet, label: 'Financial', color: 'from-green-500 to-emerald-500' },
+    { path: '/superadmin/data-governance', icon: Database, label: 'Data Governance', color: 'from-red-500 to-rose-500' },
+    { divider: true, label: 'SYSTEM' },
+    { path: '/superadmin/plans', icon: CreditCard, label: 'Plans', color: 'from-slate-500 to-gray-500' },
 ];
 
 const SuperAdminLayout = ({ children }) => {
@@ -23,6 +34,13 @@ const SuperAdminLayout = ({ children }) => {
     const handleLogout = () => {
         logout();
         navigate('/');
+    };
+
+    const isPathActive = (itemPath) => {
+        if (itemPath === '/superadmin') {
+            return location.pathname === '/superadmin';
+        }
+        return location.pathname.startsWith(itemPath);
     };
 
     return (
@@ -41,35 +59,42 @@ const SuperAdminLayout = ({ children }) => {
                         </motion.div>
                         <div>
                             <span className="font-heading text-lg text-white font-semibold">BanquetOS</span>
-                            <span className="block text-[10px] uppercase tracking-widest text-violet-400">Super Admin</span>
+                            <span className="block text-[10px] uppercase tracking-widest text-violet-400">Control Plane</span>
                         </div>
                     </div>
 
                     {/* Navigation */}
-                    <nav className="flex-1 px-3 py-4 space-y-1">
+                    <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
                         {navItems.map((item, index) => {
-                            const isActive = location.pathname === item.path;
+                            if (item.divider) {
+                                return (
+                                    <div key={`divider-${index}`} className="pt-4 pb-2 px-4">
+                                        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{item.label}</span>
+                                    </div>
+                                );
+                            }
+                            const isActive = isPathActive(item.path);
                             return (
                                 <motion.div
                                     key={item.path}
                                     initial={{ opacity: 0, x: -20 }}
                                     animate={{ opacity: 1, x: 0 }}
-                                    transition={{ delay: index * 0.05 }}
+                                    transition={{ delay: index * 0.03 }}
                                 >
                                     <Link
                                         to={item.path}
-                                        className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 group ${
+                                        className={`flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-300 group ${
                                             isActive 
                                                 ? `bg-gradient-to-r ${item.color} text-white shadow-lg` 
                                                 : 'text-slate-400 hover:bg-slate-700/50 hover:text-white'
                                         }`}
-                                        data-testid={`nav-${item.label.toLowerCase()}`}
+                                        data-testid={`nav-${item.label.toLowerCase().replace(/\s+/g, '-')}`}
                                     >
                                         <motion.div
                                             whileHover={{ scale: 1.1, rotate: isActive ? 0 : 10 }}
                                             transition={{ type: "spring", stiffness: 400 }}
                                         >
-                                            <item.icon className={`h-5 w-5 ${isActive ? 'text-white' : ''}`} />
+                                            <item.icon className={`h-4 w-4 ${isActive ? 'text-white' : ''}`} />
                                         </motion.div>
                                         <span className="text-sm font-medium">{item.label}</span>
                                         {isActive && (
@@ -132,33 +157,40 @@ const SuperAdminLayout = ({ children }) => {
                             animate={{ x: 0 }}
                             exit={{ x: -300 }}
                             transition={{ type: 'spring', damping: 30 }}
-                            className="fixed inset-y-0 left-0 w-72 bg-slate-800 shadow-2xl z-50 lg:hidden"
+                            className="fixed inset-y-0 left-0 w-72 bg-slate-800 shadow-2xl z-50 lg:hidden overflow-y-auto"
                         >
                             <div className="flex flex-col h-full">
                                 <div className="flex items-center justify-between h-16 px-4 bg-gradient-to-r from-violet-600/20 to-purple-600/20 border-b border-slate-700/50">
                                     <div className="flex items-center gap-2">
                                         <Shield className="h-6 w-6 text-violet-400" />
-                                        <span className="font-heading text-lg text-white font-semibold">Super Admin</span>
+                                        <span className="font-heading text-lg text-white font-semibold">Control Plane</span>
                                     </div>
                                     <button onClick={() => setSidebarOpen(false)} className="text-slate-400 hover:text-white">
                                         <X size={24} />
                                     </button>
                                 </div>
                                 <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-                                    {navItems.map((item) => {
-                                        const isActive = location.pathname === item.path;
+                                    {navItems.map((item, index) => {
+                                        if (item.divider) {
+                                            return (
+                                                <div key={`divider-${index}`} className="pt-4 pb-2 px-4">
+                                                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{item.label}</span>
+                                                </div>
+                                            );
+                                        }
+                                        const isActive = isPathActive(item.path);
                                         return (
                                             <Link
                                                 key={item.path}
                                                 to={item.path}
                                                 onClick={() => setSidebarOpen(false)}
-                                                className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
+                                                className={`flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all ${
                                                     isActive 
                                                         ? `bg-gradient-to-r ${item.color} text-white shadow-lg` 
                                                         : 'text-slate-400 hover:bg-slate-700/50'
                                                 }`}
                                             >
-                                                <item.icon className="h-5 w-5" />
+                                                <item.icon className="h-4 w-4" />
                                                 <span className="text-sm font-medium">{item.label}</span>
                                             </Link>
                                         );
@@ -195,7 +227,7 @@ const SuperAdminLayout = ({ children }) => {
                         <div className="flex items-center gap-2">
                             <Shield className="h-5 w-5 text-violet-400" />
                             <span className="font-heading text-lg text-white font-semibold">
-                                Super Admin
+                                Control Plane
                             </span>
                         </div>
                         <motion.div 
