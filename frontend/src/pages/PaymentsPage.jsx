@@ -30,6 +30,8 @@ const PaymentsPage = () => {
         recorded_by: '',
         payment_date: new Date().toISOString().split('T')[0]
     });
+    const [saveStatus, setSaveStatus] = useSaveState();
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const paymentMethods = [
         { value: 'cash', label: 'Cash' },
