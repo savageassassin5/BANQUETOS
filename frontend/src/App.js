@@ -3,6 +3,7 @@ import "@/App.css";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { Toaster } from "./components/ui/sonner";
 import { AuthProvider, useAuth } from "./context/AuthContext";
+import { TenantConfigProvider, useTenantConfig } from "./context/TenantConfigContext";
 
 // Pages
 import LandingPage from "./pages/LandingPage";
