@@ -1,9 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
-import { CalendarDays, Users, IndianRupee, AlertCircle, TrendingUp, ArrowUpRight, Clock, MessageSquare, Sparkles } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { CalendarDays, Users, IndianRupee, AlertCircle, TrendingUp, ArrowUpRight, Clock, MessageSquare, Sparkles, AlertTriangle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
+import { StatusBadge } from '../components/ui/status-badge';
+import { IntelligenceCue } from '../components/ui/intelligence-cue';
+import { SkeletonDashboard, SkeletonMetric, SkeletonBookingTable } from '../components/ui/skeletons';
 import { dashboardAPI, seedAPI } from '../lib/api';
 import { formatCurrency, formatDate, getStatusColor, getPaymentStatusColor } from '../lib/utils';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
