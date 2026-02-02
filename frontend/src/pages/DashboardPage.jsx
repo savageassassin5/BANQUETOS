@@ -155,20 +155,20 @@ const DashboardPage = () => {
                             animate={{ rotate: 0, scale: 1 }}
                             transition={{ type: "spring", stiffness: 200, delay: 0.2 }}
                         >
-                            <Sparkles className="h-8 w-8 text-purple-600" />
+                            <Sparkles className="h-8 w-8 text-purple-400" />
                         </motion.div>
-                        <h1 className="font-heading text-3xl md:text-4xl font-bold bg-gradient-to-r from-purple-600 via-pink-500 to-orange-500 bg-clip-text text-transparent">
+                        <h1 className="font-heading text-3xl md:text-4xl font-bold bg-gradient-to-r from-purple-400 via-pink-400 to-violet-400 bg-clip-text text-transparent">
                             Dashboard
                         </h1>
                     </div>
-                    <p className="text-slate-500">Welcome back! Here&apos;s your banquet overview.</p>
+                    <p className="text-purple-300/70">Welcome back! Here&apos;s your banquet overview.</p>
                 </div>
                 <div className="flex gap-3">
                     <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
                         <Button 
                             variant="outline" 
                             onClick={handleSeedData}
-                            className="border-purple-200 text-purple-600 hover:bg-purple-50 hover:border-purple-300 rounded-xl"
+                            className="border-purple-700/50 text-purple-300 hover:bg-purple-900/30 hover:border-purple-600 hover:text-white rounded-xl bg-transparent"
                             data-testid="seed-data-btn"
                         >
                             Load Sample Data
@@ -176,7 +176,7 @@ const DashboardPage = () => {
                     </motion.div>
                     <Link to="/dashboard/bookings/new">
                         <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                            <Button className="bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-700 hover:to-pink-600 text-white rounded-xl shadow-lg shadow-purple-200" data-testid="new-booking-btn">
+                            <Button className="bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white rounded-xl shadow-lg shadow-purple-500/25" data-testid="new-booking-btn">
                                 + New Booking
                             </Button>
                         </motion.div>
@@ -196,22 +196,22 @@ const DashboardPage = () => {
             {/* Today's Events Alert */}
             {todayBookings.length > 0 && (
                 <motion.div variants={itemVariants}>
-                    <Card className="bg-gradient-to-r from-violet-50 to-purple-50 border-violet-200 shadow-lg">
+                    <Card className="bg-gradient-to-r from-violet-900/50 to-purple-900/50 border-violet-700/50 shadow-lg shadow-purple-500/10">
                         <CardContent className="p-4 flex items-center justify-between">
                             <div className="flex items-center gap-3">
                                 <motion.div 
-                                    className="p-2 bg-violet-100 rounded-xl"
+                                    className="p-2 bg-violet-500/20 rounded-xl"
                                     animate={{ scale: [1, 1.1, 1] }}
                                     transition={{ duration: 2, repeat: Infinity }}
                                 >
-                                    <CalendarDays className="h-5 w-5 text-violet-600" />
+                                    <CalendarDays className="h-5 w-5 text-violet-400" />
                                 </motion.div>
-                                <span className="text-slate-700">
-                                    <span className="font-bold text-violet-600">{todayBookings.length}</span> event{todayBookings.length > 1 ? 's' : ''} scheduled for today
+                                <span className="text-purple-200">
+                                    <span className="font-bold text-violet-400">{todayBookings.length}</span> event{todayBookings.length > 1 ? 's' : ''} scheduled for today
                                 </span>
                             </div>
                             <Link to="/dashboard/bookings">
-                                <Button variant="ghost" size="sm" className="text-violet-600 hover:text-violet-700 hover:bg-violet-100 rounded-xl">
+                                <Button variant="ghost" size="sm" className="text-violet-400 hover:text-violet-300 hover:bg-violet-500/20 rounded-xl">
                                     View <ArrowUpRight className="ml-1 h-4 w-4" />
                                 </Button>
                             </Link>
