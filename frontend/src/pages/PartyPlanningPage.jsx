@@ -1077,7 +1077,7 @@ const PartyPlanningPage = () => {
                                 <div className="text-center py-8 text-slate-500">
                                     <Truck className="h-10 w-10 mx-auto mb-2 text-slate-300" />
                                     <p className="text-sm">No vendors assigned yet.</p>
-                                    <p className="text-xs text-slate-400 mt-1">Click "Add Vendor" to assign vendors to this event.</p>
+                                    <p className="text-xs text-slate-400 mt-1">Click &quot;Add Vendor&quot; to assign vendors to this event.</p>
                                 </div>
                             ) : (
                                 <div className="space-y-3">
