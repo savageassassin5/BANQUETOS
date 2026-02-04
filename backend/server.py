@@ -3262,7 +3262,8 @@ async def export_analytics_report(
 # ==================== VENDOR MANAGEMENT ====================
 @api_router.get("/vendors", response_model=List[Vendor])
 async def get_vendors(current_user: dict = Depends(get_current_user)):
-    vendors = await db.vendors.find({"is_active": True}, {"_id": 0}).to_list(500)
+    tenant_filter = await get_tenant_filter(current_user)
+    vendors = await db.vendors.find({"is_active": True, **tenant_filter}, {"_id": 0}).to_list(500)
     return [Vendor(**v) for v in vendors]
 
 @api_router.post("/vendors", response_model=Vendor)
