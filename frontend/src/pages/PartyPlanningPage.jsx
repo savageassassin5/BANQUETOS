@@ -939,30 +939,30 @@ const PartyPlanningPage = () => {
                                     </CardContent>
                                 </Card>
 
-                                {/* Timeline Status */}
+                                {/* Expenses Summary */}
                                 <Card>
                                     <CardHeader className="pb-2">
                                         <CardTitle className="text-sm flex items-center gap-2">
-                                            <Clock className="h-4 w-4 text-amber-600" />
-                                            Timeline Tasks
+                                            <Receipt className="h-4 w-4 text-red-600" />
+                                            Expenses
                                         </CardTitle>
                                     </CardHeader>
                                     <CardContent>
                                         <div className="space-y-2">
                                             <div className="flex justify-between">
-                                                <span className="text-gray-500 text-sm">Total tasks</span>
-                                                <span className="font-medium">{planForm.timeline_tasks.length}</span>
+                                                <span className="text-gray-500 text-sm">Items</span>
+                                                <span className="font-medium">{expenses.length}</span>
                                             </div>
                                             <div className="flex justify-between">
-                                                <span className="text-gray-500 text-sm">Completed</span>
-                                                <span className="font-medium text-green-600">
-                                                    {planForm.timeline_tasks.filter(t => t.status === 'done').length}
+                                                <span className="text-gray-500 text-sm">Staff wages</span>
+                                                <span className="font-medium text-amber-600">
+                                                    {formatCurrency(totalStaffCost)}
                                                 </span>
                                             </div>
                                             <div className="flex justify-between">
-                                                <span className="text-gray-500 text-sm">Pending</span>
-                                                <span className="font-medium text-amber-600">
-                                                    {planForm.timeline_tasks.filter(t => t.status === 'pending').length}
+                                                <span className="text-gray-500 text-sm">Total expenses</span>
+                                                <span className="font-medium text-red-600">
+                                                    {formatCurrency(totalExpenses + totalStaffCost)}
                                                 </span>
                                             </div>
                                         </div>
