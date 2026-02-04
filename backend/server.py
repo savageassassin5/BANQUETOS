@@ -2785,6 +2785,7 @@ async def get_dashboard_stats(current_user: dict = Depends(get_current_user)):
 
 @api_router.get("/dashboard/revenue-chart")
 async def get_revenue_chart(current_user: dict = Depends(get_current_user)):
+    tenant_filter = await get_tenant_filter(current_user)
     now = datetime.now(timezone.utc)
     months_data = []
     
@@ -2798,7 +2799,8 @@ async def get_revenue_chart(current_user: dict = Depends(get_current_user)):
         
         bookings = await db.bookings.find({
             "created_at": {"$gte": month_start.isoformat(), "$lt": month_end.isoformat()},
-            "status": {"$ne": "cancelled"}
+            "status": {"$ne": "cancelled"},
+            **tenant_filter
         }, {"_id": 0, "advance_paid": 1}).to_list(1000)
         
         revenue = sum(b.get('advance_paid', 0) for b in bookings)
@@ -2811,8 +2813,9 @@ async def get_revenue_chart(current_user: dict = Depends(get_current_user)):
 
 @api_router.get("/dashboard/event-distribution")
 async def get_event_distribution(current_user: dict = Depends(get_current_user)):
+    tenant_filter = await get_tenant_filter(current_user)
     pipeline = [
-        {"$match": {"status": {"$ne": "cancelled"}}},
+        {"$match": {"status": {"$ne": "cancelled"}, **tenant_filter}},
         {"$group": {"_id": "$event_type", "count": {"$sum": 1}}}
     ]
     result = await db.bookings.aggregate(pipeline).to_list(100)
