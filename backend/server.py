@@ -1834,7 +1834,9 @@ async def delete_party_expense(expense_id: str, current_user: dict = Depends(get
             }}
         )
     
-    return {"message": "Expense deleted"}
+    # Return all remaining expenses for this booking
+    all_expenses = await db.party_expenses.find({"booking_id": booking_id}, {"_id": 0}).to_list(100)
+    return all_expenses
 
 # ==================== PARTY PLANNING ROUTES (ADMIN ONLY) ====================
 @api_router.get("/party-plans")
