@@ -255,6 +255,15 @@ const PartyPlanningPage = () => {
                 setVendorAssignments([]);
             }
             
+            // Load expenses for this booking
+            try {
+                const expensesRes = await partyExpensesAPI.getAll(bookingId);
+                setExpenses(expensesRes.data || []);
+            } catch (e) {
+                console.error('Failed to load expenses:', e);
+                setExpenses([]);
+            }
+            
             // Load profit snapshot
             try {
                 const profitRes = await partyPlanningAPI.getProfitSnapshot(bookingId);
