@@ -1486,7 +1486,8 @@ async def get_bookings(
     status: Optional[BookingStatus] = None,
     current_user: dict = Depends(get_current_user)
 ):
-    query = {}
+    tenant_filter = await get_tenant_filter(current_user)
+    query = {**tenant_filter}
     if status:
         query['status'] = status.value
     
@@ -1495,7 +1496,8 @@ async def get_bookings(
 
 @api_router.get("/bookings/{booking_id}", response_model=Booking)
 async def get_booking(booking_id: str, current_user: dict = Depends(get_current_user)):
-    booking = await db.bookings.find_one({"id": booking_id}, {"_id": 0})
+    tenant_filter = await get_tenant_filter(current_user)
+    booking = await db.bookings.find_one({"id": booking_id, **tenant_filter}, {"_id": 0})
     if not booking:
         raise HTTPException(status_code=404, detail="Booking not found")
     return Booking(**booking)
