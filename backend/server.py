@@ -1428,6 +1428,7 @@ async def create_menu_item(item_data: MenuItemCreate, current_user: dict = Depen
         raise HTTPException(status_code=403, detail="Not authorized")
     
     item = MenuItem(**item_data.model_dump())
+    item.tenant_id = current_user.get('tenant_id')  # Set tenant_id for multi-tenant isolation
     item_doc = item.model_dump()
     item_doc['created_at'] = item_doc['created_at'].isoformat()
     await db.menu_items.insert_one(item_doc)
@@ -1438,11 +1439,12 @@ async def update_menu_item(item_id: str, item_data: MenuItemCreate, current_user
     if current_user['role'] not in ['admin', 'staff']:
         raise HTTPException(status_code=403, detail="Not authorized")
     
-    result = await db.menu_items.update_one({"id": item_id}, {"$set": item_data.model_dump()})
+    tenant_filter = await get_tenant_filter(current_user)
+    result = await db.menu_items.update_one({"id": item_id, **tenant_filter}, {"$set": item_data.model_dump()})
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Item not found")
     
-    updated = await db.menu_items.find_one({"id": item_id}, {"_id": 0})
+    updated = await db.menu_items.find_one({"id": item_id, **tenant_filter}, {"_id": 0})
     return MenuItem(**updated)
 
 @api_router.delete("/menu/{item_id}")
