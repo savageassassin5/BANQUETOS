@@ -129,10 +129,10 @@ const SuperAdminRoute = ({ children }) => {
   return <SuperAdminLayout>{children}</SuperAdminLayout>;
 };
 
-// Feature Route - requires specific feature to be enabled (uses tenant_config)
+// Feature Route - requires specific feature to be enabled (uses user's effective_features)
 const FeatureRoute = ({ children, feature }) => {
-  const { user, loading } = useAuth();
-  const { isFeatureEnabled, loading: configLoading, error: configError } = useTenantConfig();
+  const { user, loading, hasFeature } = useAuth();
+  const { loading: configLoading, error: configError } = useTenantConfig();
   
   if (loading || configLoading) {
     return (
@@ -170,8 +170,8 @@ const FeatureRoute = ({ children, feature }) => {
     );
   }
   
-  // Check if feature is enabled via tenant_config
-  if (feature && !isFeatureEnabled(feature)) {
+  // Check if feature is enabled via user's effective_features
+  if (feature && !hasFeature(feature)) {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center h-96">
