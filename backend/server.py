@@ -1313,8 +1313,9 @@ async def get_me(current_user: dict = Depends(get_current_user)):
 
 # ==================== HALL ROUTES ====================
 @api_router.get("/halls", response_model=List[Hall])
-async def get_halls():
-    halls = await db.halls.find({"is_active": True}, {"_id": 0}).to_list(100)
+async def get_halls(current_user: dict = Depends(get_current_user)):
+    tenant_filter = await get_tenant_filter(current_user)
+    halls = await db.halls.find({"is_active": True, **tenant_filter}, {"_id": 0}).to_list(100)
     return [Hall(**h) for h in halls]
 
 @api_router.get("/public/venues", response_model=List[Hall])
@@ -1324,8 +1325,9 @@ async def get_public_venues():
     return [Hall(**h) for h in halls]
 
 @api_router.get("/halls/{hall_id}", response_model=Hall)
-async def get_hall(hall_id: str):
-    hall = await db.halls.find_one({"id": hall_id}, {"_id": 0})
+async def get_hall(hall_id: str, current_user: dict = Depends(get_current_user)):
+    tenant_filter = await get_tenant_filter(current_user)
+    hall = await db.halls.find_one({"id": hall_id, **tenant_filter}, {"_id": 0})
     if not hall:
         raise HTTPException(status_code=404, detail="Hall not found")
     return Hall(**hall)
