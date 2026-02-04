@@ -2662,6 +2662,7 @@ async def mark_enquiry_contacted(enquiry_id: str, current_user: dict = Depends(g
 # ==================== CALENDAR ROUTES ====================
 @api_router.get("/calendar")
 async def get_calendar_events(month: int, year: int, current_user: dict = Depends(get_current_user)):
+    tenant_filter = await get_tenant_filter(current_user)
     start_date = f"{year}-{month:02d}-01"
     if month == 12:
         end_date = f"{year + 1}-01-01"
@@ -2670,13 +2671,14 @@ async def get_calendar_events(month: int, year: int, current_user: dict = Depend
     
     bookings = await db.bookings.find({
         "event_date": {"$gte": start_date, "$lt": end_date},
-        "status": {"$ne": "cancelled"}
+        "status": {"$ne": "cancelled"},
+        **tenant_filter
     }, {"_id": 0}).to_list(500)
     
     events = []
     for booking in bookings:
-        customer = await db.customers.find_one({"id": booking['customer_id']}, {"_id": 0})
-        hall = await db.halls.find_one({"id": booking['hall_id']}, {"_id": 0})
+        customer = await db.customers.find_one({"id": booking['customer_id'], **tenant_filter}, {"_id": 0})
+        hall = await db.halls.find_one({"id": booking['hall_id'], **tenant_filter}, {"_id": 0})
         events.append({
             "id": booking['id'],
             "title": f"{customer['name'] if customer else 'Unknown'} - {booking['event_type'].title()}",
