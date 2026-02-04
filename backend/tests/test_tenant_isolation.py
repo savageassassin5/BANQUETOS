@@ -172,7 +172,7 @@ class TestPartyPlanningAccess:
         if len(bookings) > 0:
             booking_id = bookings[0]["id"]
             # Get party plan for this booking
-            response = requests.get(f"{BASE_URL}/api/party-plans/booking/{booking_id}", headers=self.headers)
+            response = requests.get(f"{BASE_URL}/api/party-plans/by-booking/{booking_id}", headers=self.headers)
             print(f"Party plan response for {booking_id}: {response.status_code}")
             assert response.status_code == 200, f"Failed: {response.text}"
             data = response.json()
