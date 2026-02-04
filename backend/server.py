@@ -2724,25 +2724,29 @@ async def check_availability(date: str, hall_id: Optional[str] = None):
 # ==================== DASHBOARD / ANALYTICS ====================
 @api_router.get("/dashboard/stats")
 async def get_dashboard_stats(current_user: dict = Depends(get_current_user)):
+    tenant_filter = await get_tenant_filter(current_user)
     now = datetime.now(timezone.utc)
     current_month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
     
     # Total bookings this month
     total_bookings = await db.bookings.count_documents({
-        "created_at": {"$gte": current_month_start.isoformat()}
+        "created_at": {"$gte": current_month_start.isoformat()},
+        **tenant_filter
     })
     
     # Upcoming events
     today = now.strftime("%Y-%m-%d")
     upcoming_events = await db.bookings.count_documents({
         "event_date": {"$gte": today},
-        "status": {"$in": ["enquiry", "confirmed"]}
+        "status": {"$in": ["enquiry", "confirmed"]},
+        **tenant_filter
     })
     
     # Monthly revenue
     bookings = await db.bookings.find({
         "created_at": {"$gte": current_month_start.isoformat()},
-        "status": {"$ne": "cancelled"}
+        "status": {"$ne": "cancelled"},
+        **tenant_filter
     }, {"_id": 0, "total_amount": 1, "advance_paid": 1}).to_list(1000)
     
     monthly_revenue = sum(b.get('advance_paid', 0) for b in bookings)
@@ -2750,12 +2754,13 @@ async def get_dashboard_stats(current_user: dict = Depends(get_current_user)):
     # Pending payments
     pending_payments = await db.bookings.count_documents({
         "payment_status": {"$in": ["pending", "partial"]},
-        "status": {"$ne": "cancelled"}
+        "status": {"$ne": "cancelled"},
+        **tenant_filter
     })
     
     # Recent bookings
     recent_bookings = await db.bookings.find(
-        {"status": {"$ne": "cancelled"}},
+        {"status": {"$ne": "cancelled"}, **tenant_filter},
         {"_id": 0}
     ).sort("created_at", -1).limit(5).to_list(5)
     
@@ -2767,7 +2772,7 @@ async def get_dashboard_stats(current_user: dict = Depends(get_current_user)):
         booking['hall_name'] = hall['name'] if hall else 'Unknown'
     
     # New enquiries count
-    new_enquiries = await db.enquiries.count_documents({"is_contacted": False})
+    new_enquiries = await db.enquiries.count_documents({"is_contacted": False, **tenant_filter})
     
     return {
         "total_bookings": total_bookings,
