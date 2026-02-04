@@ -613,6 +613,7 @@ const PartyPlanningPage = () => {
                 vendor_assignments: vendorAssignments,
                 staff_assignments: planForm.staff_assignments.map(s => ({
                     role: s.role,
+                    custom_role_name: s.custom_role_name || '',
                     count: parseInt(s.count) || 1,
                     wage_type: s.wage_type || 'fixed',
                     wage: parseFloat(s.wage) || 0,
