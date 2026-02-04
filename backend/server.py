@@ -1365,7 +1365,8 @@ async def delete_hall(hall_id: str, current_user: dict = Depends(get_current_use
     if current_user['role'] != 'admin':
         raise HTTPException(status_code=403, detail="Not authorized")
     
-    result = await db.halls.update_one({"id": hall_id}, {"$set": {"is_active": False}})
+    tenant_filter = await get_tenant_filter(current_user)
+    result = await db.halls.update_one({"id": hall_id, **tenant_filter}, {"$set": {"is_active": False}})
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Hall not found")
     return {"message": "Hall deleted"}
