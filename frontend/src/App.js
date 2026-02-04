@@ -371,7 +371,7 @@ function AppRoutes() {
         </FeatureRoute>
       } />
       <Route path="/dashboard/expenses" element={
-        <FeatureRoute feature="expenses">
+        <FeatureRoute feature="profit_tracking">
           <ExpensesPage />
         </FeatureRoute>
       } />
