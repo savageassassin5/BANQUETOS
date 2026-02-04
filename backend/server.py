@@ -1516,19 +1516,22 @@ async def get_booking(booking_id: str, current_user: dict = Depends(get_current_
 
 @api_router.post("/bookings", response_model=Booking)
 async def create_booking(booking_data: BookingCreate, current_user: dict = Depends(get_current_user)):
-    # Check for slot conflicts (same hall, same date, same slot)
+    tenant_filter = await get_tenant_filter(current_user)
+    
+    # Check for slot conflicts (same hall, same date, same slot) within tenant
     existing = await db.bookings.find_one({
         "hall_id": booking_data.hall_id,
         "event_date": booking_data.event_date,
         "slot": booking_data.slot.value,
-        "status": {"$nin": ["cancelled"]}
+        "status": {"$nin": ["cancelled"]},
+        **tenant_filter
     }, {"_id": 0})
     
     if existing:
         raise HTTPException(status_code=400, detail=f"Hall already booked for {booking_data.slot.value} slot on this date")
     
-    # Get hall info (for availability only, not pricing)
-    hall = await db.halls.find_one({"id": booking_data.hall_id}, {"_id": 0})
+    # Get hall info (for availability only, not pricing) - must belong to tenant
+    hall = await db.halls.find_one({"id": booking_data.hall_id, **tenant_filter}, {"_id": 0})
     if not hall:
         raise HTTPException(status_code=404, detail="Hall not found")
     
