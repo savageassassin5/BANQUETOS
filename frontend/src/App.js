@@ -376,7 +376,7 @@ function AppRoutes() {
         </FeatureRoute>
       } />
       <Route path="/dashboard/party-planning" element={
-        <FeatureRoute feature="party_planning">
+        <FeatureRoute feature="party_planner">
           <PartyPlanningPage />
         </FeatureRoute>
       } />
