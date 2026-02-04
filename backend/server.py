@@ -1415,8 +1415,9 @@ async def delete_menu_category(category_id: str, current_user: dict = Depends(ge
 
 # ==================== MENU ROUTES ====================
 @api_router.get("/menu", response_model=List[MenuItem])
-async def get_menu_items():
-    items = await db.menu_items.find({"is_active": True}, {"_id": 0}).to_list(500)
+async def get_menu_items(current_user: dict = Depends(get_current_user)):
+    tenant_filter = await get_tenant_filter(current_user)
+    items = await db.menu_items.find({"is_active": True, **tenant_filter}, {"_id": 0}).to_list(500)
     return [MenuItem(**i) for i in items]
 
 @api_router.post("/menu", response_model=MenuItem)
