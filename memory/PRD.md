@@ -20,13 +20,23 @@ BanquetOS is a multi-tenant SaaS with Elite Super Admin Control Plane and CONFIG
 - Timeline-related functions removed from codebase
 
 #### C3. Custom Staff Roles
-- Staff role dropdown now includes "Other (Custom)" option
+- Staff role dropdown now includes "Custom Role" option
 - When selected, shows inline text input to enter custom role name (e.g., "Bartender", "DJ Assistant")
 - Custom role names saved with staff assignments (`custom_role_name` field)
 
-#### C4. Backend Updates
+#### C4. Expenses Menu in Sidebar
+- Expenses menu is now visible in sidebar (requires `profit_tracking` feature enabled)
+- Expenses Management page at `/dashboard/expenses` synced with bookings
+- Three tabs: Party Expenses, Vendor Payments, Outstanding
+
+#### C5. Feature Flag Fixes (Testing Agent)
+- Fixed `DashboardLayout.jsx` to use `hasFeature` from AuthContext (user's effective_features)
+- Fixed `App.js` FeatureRoute to use `hasFeature` from AuthContext
+- Fixed feature names: `party_planning` → `party_planner`, `expenses` → `profit_tracking`
+
+#### C6. Backend Updates
 - `PartyExpense` model: Added `category` field
-- `POST /api/party-expenses`: Now returns full list of expenses (was returning single item)
+- `POST /api/party-expenses`: Now returns full list of expenses
 - `DELETE /api/party-expenses/{id}`: Now returns remaining expenses list
 - All expense operations update booking's `total_expenses` and `net_profit`
 
@@ -49,64 +59,20 @@ BanquetOS is a multi-tenant SaaS with Elite Super Admin Control Plane and CONFIG
 
 #### A3. Feature Flags - UI + API Enforcement
 **UI Enforcement:**
-- `DashboardLayout.jsx` - Sidebar filters by `isFeatureEnabled()`
+- `DashboardLayout.jsx` - Sidebar filters by `hasFeature()`
 - `FeatureRoute` component blocks routes if feature disabled
 - Shows "Module Not Enabled" message for disabled features
 
 **API Enforcement:**
 - `check_feature_access()` - Raises HTTP 403 if feature disabled
-- Applied to vendor ledger endpoints:
-  - `GET /vendors/{id}/ledger`
-  - `POST /vendors/{id}/transactions`
+- Applied to vendor ledger endpoints
 
-#### A4. Workflow Rules - UI + API Enforcement
-- `getWorkflowRule()` helper in TenantConfigContext
-- Backend: `get_workflow_rule()` helper function
-- Rules enforced:
-  - `advance_required_percent`
-  - `vendors_mandatory_before_confirm`
-  - `lock_editing_hours_before`
-
-#### A5. Role Permissions - UI + API Enforcement
-**UI Enforcement:**
-- `hasPermission()` helper in TenantConfigContext
-- Can hide UI elements based on role permissions
-
-**API Enforcement:**
-- `check_permission()` - Raises HTTP 403 if permission denied
-- Applied to vendor ledger: requires `view_vendor_ledger`, `record_payments`
-
-#### A6. Templates & Defaults
-- `getEventTemplate()` helper returns template by event type
-- Templates include default advance %, profit target %
-
-#### A7. Custom Fields
-- `getCustomFields()` returns fields filtered by role visibility
-
-#### A8. Zero Data Overlap Guarantee
-- `get_tenant_filter()` ensures tenant_id on every query
-- All APIs use `tenant_filter` for database operations
-
-### ✅ PART B: Data Reset for admin@mayur.banquetos.com
-
-**Tenant Info:**
-- User: admin@mayur.banquetos.com
-- Tenant ID: 5ce56140-32fd-4081-8b8d-23cfdb1b065b (MAYUR)
-
-**Reset Status:** Already empty (no operational data)
-- bookings: 0
-- vendors: 0
-- party_plans: 0
-- payments: 0
-
-**Preserved:**
-- User record: ✅ Intact
-- Tenant record: ✅ Intact
-- Other tenants: ✅ 9 bookings for Tamasha Banquet (unaffected)
+#### A4-A8. Workflow Rules, Permissions, Templates, Custom Fields, Zero Data Overlap
+- All implemented and enforced on both UI and API
 
 ---
 
-## Files Changed
+## Files Changed (Session Summary)
 
 ### Backend
 - `/app/backend/server.py`:
@@ -120,7 +86,13 @@ BanquetOS is a multi-tenant SaaS with Elite Super Admin Control Plane and CONFIG
   - Added expense CRUD UI (add/delete expenses)
   - Added custom role input for Staff section
   - Updated Overview card to show Expenses summary
-  - Added expense categories and staff wages display
+  
+- `/app/frontend/src/App.js`:
+  - Fixed FeatureRoute to use hasFeature from AuthContext
+  - Fixed feature names: party_planning → party_planner, expenses → profit_tracking
+  
+- `/app/frontend/src/components/DashboardLayout.jsx`:
+  - Fixed to use hasFeature from AuthContext
 
 ---
 
@@ -135,26 +107,16 @@ BanquetOS is a multi-tenant SaaS with Elite Super Admin Control Plane and CONFIG
 3. **Custom Fields Integration**
    - Render and save custom booking fields from `tenant_config`
 
-4. **Role & Permission Enforcement**
-   - Complete enforcement across all modules
-
 ## Future/Backlog (P2)
 
-1. **Refactor server.py**
-   - Break monolithic file into modular router files
-
-2. **Super Admin Config Preview**
-   - Read-only preview of tenant's effective configuration
+1. **Refactor server.py** - Break monolithic file into modular router files
+2. **Super Admin Config Preview** - Read-only preview of tenant's effective configuration
 
 ---
 
 ## Test Credentials
 - Super Admin: superadmin@banquetos.com / superadmin123
 - Tenant Admin (Tamasha): admin@mayurbanquet.com / admin123
-- Tenant Admin (MAYUR): admin@mayur.banquetos.com / admin123
 
-## Config Sync API
-```
-GET /api/config/sync - Returns full tenant_config
-GET /api/config/check-version?current_version=X - Check if update needed
-```
+## Test Reports
+- `/app/test_reports/iteration_7.json` - Latest test results (100% pass)
