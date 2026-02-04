@@ -1736,6 +1736,7 @@ async def create_payment(payment_data: PaymentCreate, current_user: dict = Depen
         payment_dict['payment_date'] = datetime.now(timezone.utc).strftime('%Y-%m-%d')
     
     payment = Payment(**payment_dict)
+    payment.tenant_id = current_user.get('tenant_id')  # Set tenant_id for multi-tenant isolation
     payment_doc = payment.model_dump()
     payment_doc['created_at'] = payment_doc['created_at'].isoformat()
     await db.payments.insert_one(payment_doc)
