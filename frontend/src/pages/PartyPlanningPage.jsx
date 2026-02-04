@@ -5,7 +5,7 @@ import {
     CheckCircle, Calendar, Save, AlertTriangle, Clock, RefreshCw, Target,
     FileText, Activity, Sparkles, TrendingUp, AlertCircle, CheckCircle2,
     Building2, UserCheck, Clipboard, Play, Circle, Phone, Mail, Minus, X,
-    Camera, Loader2
+    Camera, Loader2, Receipt
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
