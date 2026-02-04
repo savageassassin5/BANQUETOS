@@ -2521,7 +2521,7 @@ async def get_vendor_payments(vendor_id: Optional[str] = None, current_user: dic
     
     tenant_filter = await get_tenant_filter(current_user)
     
-    query = {}
+    query = {**tenant_filter}
     if vendor_id:
         query['vendor_id'] = vendor_id
     payments = await db.vendor_payments.find(query, {"_id": 0}).sort("created_at", -1).to_list(1000)
