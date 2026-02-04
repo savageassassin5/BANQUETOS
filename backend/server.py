@@ -1711,7 +1711,8 @@ async def cancel_booking(booking_id: str, current_user: dict = Depends(get_curre
 # ==================== PAYMENT ROUTES ====================
 @api_router.get("/payments", response_model=List[Payment])
 async def get_payments(booking_id: Optional[str] = None, current_user: dict = Depends(get_current_user)):
-    query = {}
+    tenant_filter = await get_tenant_filter(current_user)
+    query = {**tenant_filter}
     if booking_id:
         query['booking_id'] = booking_id
     payments = await db.payments.find(query, {"_id": 0}).sort("created_at", -1).to_list(1000)
