@@ -1360,16 +1360,26 @@ const PartyPlanningPage = () => {
                                                         </div>
                                                         <div className="flex-1 space-y-3">
                                                             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 items-center">
-                                                                <Select value={staff.role} onValueChange={v => updateStaffMember(index, 'role', v)}>
-                                                                    <SelectTrigger className="bg-slate-50">
-                                                                        <SelectValue placeholder="Role" />
-                                                                    </SelectTrigger>
-                                                                    <SelectContent>
-                                                                        {staffRoles.map(role => (
-                                                                            <SelectItem key={role.value} value={role.value}>{role.label}</SelectItem>
-                                                                        ))}
-                                                                    </SelectContent>
-                                                                </Select>
+                                                                <div className="flex items-center gap-2">
+                                                                    <Select value={staff.role} onValueChange={v => updateStaffMember(index, 'role', v)}>
+                                                                        <SelectTrigger className="bg-slate-50">
+                                                                            <SelectValue placeholder="Role" />
+                                                                        </SelectTrigger>
+                                                                        <SelectContent>
+                                                                            {staffRoles.map(role => (
+                                                                                <SelectItem key={role.value} value={role.value}>{role.label}</SelectItem>
+                                                                            ))}
+                                                                        </SelectContent>
+                                                                    </Select>
+                                                                    {staff.role === 'custom' && (
+                                                                        <Input
+                                                                            placeholder="Role name *"
+                                                                            className="h-9 min-w-[120px]"
+                                                                            value={staff.custom_role_name || ''}
+                                                                            onChange={e => updateStaffMember(index, 'custom_role_name', e.target.value)}
+                                                                        />
+                                                                    )}
+                                                                </div>
 
                                                                 {/* Count with +/- buttons */}
                                                                 <div className="flex items-center gap-1">
