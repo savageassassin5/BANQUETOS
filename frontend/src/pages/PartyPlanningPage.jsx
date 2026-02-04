@@ -804,7 +804,7 @@ const PartyPlanningPage = () => {
                             <TabsTrigger value="overview">Overview</TabsTrigger>
                             <TabsTrigger value="vendors">Vendors</TabsTrigger>
                             <TabsTrigger value="staff">Staff</TabsTrigger>
-                            <TabsTrigger value="timeline">Timeline</TabsTrigger>
+                            <TabsTrigger value="expenses">Expenses</TabsTrigger>
                             <TabsTrigger value="profit">Profit</TabsTrigger>
                         </TabsList>
 
