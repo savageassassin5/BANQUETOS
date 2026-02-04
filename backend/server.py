@@ -1473,6 +1473,7 @@ async def get_customer(customer_id: str, current_user: dict = Depends(get_curren
 @api_router.post("/customers", response_model=Customer)
 async def create_customer(customer_data: CustomerCreate, current_user: dict = Depends(get_current_user)):
     customer = Customer(**customer_data.model_dump())
+    customer.tenant_id = current_user.get('tenant_id')  # Set tenant_id for multi-tenant isolation
     customer_doc = customer.model_dump()
     customer_doc['created_at'] = customer_doc['created_at'].isoformat()
     await db.customers.insert_one(customer_doc)
@@ -1480,11 +1481,12 @@ async def create_customer(customer_data: CustomerCreate, current_user: dict = De
 
 @api_router.put("/customers/{customer_id}", response_model=Customer)
 async def update_customer(customer_id: str, customer_data: CustomerCreate, current_user: dict = Depends(get_current_user)):
-    result = await db.customers.update_one({"id": customer_id}, {"$set": customer_data.model_dump()})
+    tenant_filter = await get_tenant_filter(current_user)
+    result = await db.customers.update_one({"id": customer_id, **tenant_filter}, {"$set": customer_data.model_dump()})
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Customer not found")
     
-    updated = await db.customers.find_one({"id": customer_id}, {"_id": 0})
+    updated = await db.customers.find_one({"id": customer_id, **tenant_filter}, {"_id": 0})
     return Customer(**updated)
 
 # ==================== BOOKING ROUTES ====================
