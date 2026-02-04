@@ -2644,12 +2644,14 @@ async def create_enquiry(enquiry_data: EnquiryCreate):
 
 @api_router.get("/enquiries", response_model=List[Enquiry])
 async def get_enquiries(current_user: dict = Depends(get_current_user)):
-    enquiries = await db.enquiries.find({}, {"_id": 0}).sort("created_at", -1).to_list(500)
+    tenant_filter = await get_tenant_filter(current_user)
+    enquiries = await db.enquiries.find(tenant_filter, {"_id": 0}).sort("created_at", -1).to_list(500)
     return [Enquiry(**e) for e in enquiries]
 
 @api_router.put("/enquiries/{enquiry_id}/contacted")
 async def mark_enquiry_contacted(enquiry_id: str, current_user: dict = Depends(get_current_user)):
-    result = await db.enquiries.update_one({"id": enquiry_id}, {"$set": {"is_contacted": True}})
+    tenant_filter = await get_tenant_filter(current_user)
+    result = await db.enquiries.update_one({"id": enquiry_id, **tenant_filter}, {"$set": {"is_contacted": True}})
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Enquiry not found")
     return {"message": "Enquiry marked as contacted"}
