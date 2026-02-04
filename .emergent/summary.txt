@@ -1,86 +1,88 @@
 <analysis>**original_problem_statement:**
-The user's initial high-level goals were to convert a single-tenant app into a multi-tenant SaaS, overhaul the landing page, and add intelligence to the party planning module.
-
-The work in this session pivoted to a series of specific, detailed UI/UX and feature enhancement requests:
-1.  **Global UI/UX Polish (Completed):** A world-class polish of all admin panel pages without changing layouts. This included adding state-driven UI (status badges), clear save/load feedback, consistent micro-interactions, and an improved visual hierarchy.
-2.  **Skeleton Loading (Completed):** Implement context-aware, high-quality skeleton loading states for all major admin pages (Dashboard, Bookings, Party Planning, etc.) to prevent layout shifts and improve perceived performance.
-3.  **Party Planner Elite Upgrade (Completed):** A deep enhancement of the Vendors and Staff tabs within the Party Planner modal. This involved adding flexible vendor assignment (select, add new, other), smart staff suggestions based on event type, and faster inline editing controls.
-4.  **Dark Theme (Attempted & Reverted):** The agent implemented a comprehensive dark purple theme, but the user rejected it (looksbad), and the agent reverted all changes back to the original light theme.
-5.  **Fix & Upgrade Vendor Section (New & In Progress):** The user reported that the  page is broken (blank screen despite API returning data) and provided a detailed specification to transform it into a professional, accounting-grade module. This includes a vendor directory, a full credit/debit transaction ledger for each vendor, payable/receivable balance tracking, and multiple payment methods.
+The user's initial high-level goals were to convert a single-tenant app into a multi-tenant SaaS. The work has since progressed through several major features:
+1.  **UI/UX Polish:** A comprehensive polish of the admin panel.
+2.  **Elite Vendor System:** A complete overhaul of the vendor section into an accounting-grade module with a directory and transaction ledger. This was built to fix a broken  page.
+3.  **Elite Super Admin Panel:** A full configuration control plane for super admins to manage tenants, feature flags, workflow rules, permissions, and more.
+4.  **Config Integration:** Integration of the Super Admin's  into the tenant-facing application, making features and rules dynamically controlled.
+5.  **Data Reset:** A one-time data reset for a specific test tenant.
 
 **PRODUCT REQUIREMENTS (Current Task - Non-Negotiable):**
-*   **Fix the Vendor Section:** The frontend page at  is broken and must be fixed.
-*   **Implement Elite Vendor System:**
-    *   **Data Models:** Create new backend models for , , and  (a full ledger).
-    *   **Balance Logic:** Calculate and display vendor balances as Payable (you owe them) or Receivable (they owe you) based on .
-    *   **APIs:** Implement a full suite of CRUD APIs for vendors and their transactions, ensuring tenant isolation.
-    *   **UI - Vendor Directory:** A list view of all vendors showing their current payable/receivable balance.
-    *   **UI - Vendor Ledger:** A detailed modal/page showing a vendor's full transaction history with filtering capabilities and actions to record payments or add debits/credits.
-    *   **UI - Party Planner Integration:** The vendor tab must allow selecting from the directory, adding new vendors inline, assigning an , and recording payments for that specific booking.
-    *   **UI Rules:** NO layout redesign. All features must be integrated into the existing UI structure.
+*   **Restore Expense Section:** The  tab was removed and must be restored, linked to bookings, and included in profit calculations.
+*   **Fix Party Planner:** The Party Planner module is not loading/saving data correctly. It must be fixed to be driven by .
+*   **Remove Timeline:** The  tab and its related logic must be completely removed from the Party Planner.
+*   **Enhance Staff Section:** Allow adding Custom Roles via an inline text input in the staff planning tab, in addition to preset roles.
+*   **Data Integrity:** All Party Planner data (vendors, staff, expenses, etc.) MUST be tied to a single  and .
 
 **User's preferred language**: English
 
 **what currently exists?**
-The application is a functional multi-tenant Banquet Management SaaS platform. In this session, the agent performed a comprehensive UI/UX polish across all admin pages, implementing skeleton loaders, status badges, better user feedback, and micro-animations. The Party Planner modal was significantly upgraded with more intelligent and usable vendor/staff management tabs. An attempt to add a dark theme was made but was rejected by the user and reverted. The application is back to its original light theme, but with all the UI/UX polish enhancements. The agent was investigating why the main Vendors page is not rendering data.
+The application is a multi-tenant Banquet Management SaaS platform. It has a functional Elite Vendor System for accounting and a comprehensive Elite Super Admin panel for configuration. The main tenant application is now fully integrated with the super admin's configuration (), meaning features, UI elements, and rules are dynamically controlled per tenant. The agent has just started investigating the user's latest request to fix the Party Planner.
 
 **Last working item**:
-- **Last item agent was working:** The agent was tasked to fix the broken Vendor section. The user reported that the  page appears as a blank white screen, even though the API returns data. The user then provided a comprehensive set of requirements to not only fix but completely overhaul the vendor management system into an accounting-grade module. The agent had just started investigating by checking the API response and the frontend component code.
-- **Status:** NOT STARTED
+- **Last item agent was working:** The agent began work on the user's latest set of requirements focused on the Party Planner module. The agent's first step was to investigate the current state of the Party Planner by viewing the  file to identify the  tab that needs to be removed and confirm that the  tab is missing.
+- **Status:** IN PROGRESS
 - **Agent Testing Done:** N
 - **Which testing method agent to use?** both
 - **User Testing Done:** N
 
 **All Pending/In progress Issue list**:
-- **Issue 1: Vendor Page is Broken and Needs Complete Overhaul (P0)**
-  - **Description:** The  page is not rendering any data, showing a blank white area. The backend API  is returning data correctly, indicating a frontend issue. The user's new requirements have escalated this from a simple bug fix to a major feature implementation.
-  - **Attempted fixes:** The agent confirmed the API returns data and viewed the  component but has not yet identified the root cause of the rendering failure.
+- **Issue 1: Party Planner is not working correctly (P0)**
+  - **Description:** The Party Planner module fails to load, save, or persist data reliably. The core of the problem is likely that it's not correctly using the  from the URL or state to manage its data.
+  - **Attempted fixes:** None yet. Investigation has just begun.
   - **Next debug checklist:**
-    1.  Inspect the browser console logs on the  page for any runtime errors in React.
-    2.  Review  to trace the state management of the  data from the API call to the render method. Check for incorrect state updates or conditional rendering logic that might be causing the component to render nothing.
-    3.  Once the rendering issue is fixed, begin implementing the full Elite Vendor System as per the user's detailed requirements.
-  - **Why fix this issue and what will be achieved with the fix?** This is a critical feature for banquet operations. Fixing and upgrading it will provide essential accounting and vendor management capabilities, directly addressing a core business need and a user-reported bug.
+    1.  Trace how  is passed to and used within .
+    2.  Verify that the API endpoint  is being called correctly and returning the expected data.
+    3.  Inspect the component's state management to understand why data is not being saved or reloaded.
+    4.  Implement proper loading and error states to give the user feedback.
   - **Status:** NOT STARTED
   - **Is recurring issue?** N
   - **Should Test frontend/backend/both after fix?** both
-  - **Blocked on other issue:** None. This is the primary blocker.
+  - **Blocked on other issue:** None.
 
 **In progress Task List**:
-- **Task 1: Implement Elite Vendor System (P0)**
-  - **Where to resume:** Start by implementing the new backend data models (, , ) in  as specified by the user. Then create the required API endpoints.
-  - **What will be achieved with this?** A fully functional, accounting-grade vendor management system with a directory, transaction ledger, and balance tracking.
+- **Task 1: Restore Expense Section (P0)**
+  - **Description:** The Expenses feature was removed and must be brought back. It needs to appear as a tab in the Party Planner, allow CRUD operations on expense items for a specific booking, and be factored into the booking's profit calculation.
+  - **Where to resume:** Re-implement the feature. First, create a new UI component for the Expenses tab within . Then, add backend support: modify the  model or create a new  collection to store expense items linked to  and . Create the necessary CRUD APIs and update the profit calculation logic.
   - **Status:** NOT STARTED
   - **Should Test frontend/backend/both after fix?** both
-  - **Blocked on something:** Blocked on resolving Issue 1.
+  - **Blocked on something:** None.
+
+- **Task 2: Remove Timeline from Party Planner (P1)**
+  - **Description:** The Timeline tab within the Party Planner is obsolete and must be removed entirely, including its UI, state logic, and any associated API calls.
+  - **Where to resume:** Edit  to remove the Timeline's  and  components. Search the codebase for any lingering functions or API calls related to timeline and delete them.
+  - **Status:** NOT STARTED
+  - **Should Test frontend/backend/both after fix?** frontend
+  - **Blocked on something:** None.
+
+- **Task 3: Implement Custom Roles in Staff Section (P1)**
+  - **Description:** The Staff planning tab only allows selecting from a predefined list of roles. This needs to be enhanced to allow users to add custom roles (e.g., Bartender, DJ Assistant) via an inline text input.
+  - **Where to resume:** In , modify the Staff tab UI. Add an Other... or Custom Role option to the role selection dropdown/mechanism. When selected, display a text input. Update the state and backend model to store and handle these custom role strings.
+  - **Status:** NOT STARTED
+  - **Should Test frontend/backend/both after fix?** both
+  - **Blocked on something:** None.
 
 **Upcoming and Future Tasks**
 - **Upcoming Tasks:**
-  - **Phase 4 - Dashboard Intelligence (P1):** Enhance the main dashboard with widgets that use the Party Planning data (e.g., At Risk events based on low readiness scores).
-  - **Phase 5 - Quality & Safety (P1):** Implement strong validation, ensure reliable state management, and enforce all permissions rigorously across the newly added features.
+    - **P1 - Party Planner Templates & Defaults Integration:** Implement logic to auto-apply default vendors, staff plans, and checklists from  when a new party plan is created.
+    - **P1 - Workflow Rules Enforcement:** Implement server-side enforcement for all remaining workflow rules defined in  (e.g., , ).
+    - **P2 - Party Planner Custom Fields Integration:** Build the UI to render and save custom booking fields (defined in ) within the booking forms.
+    - **P2 - Role & Permission Enforcement:** Complete the enforcement of all role-based permissions across all modules, checking them in both the UI and API.
 - **Future Tasks:**
-  - **Refactor  (P2):** Break the monolithic  into smaller, modular routers (, , etc.) to improve maintainability.
+    - **P2 - Refactor :** Break the monolithic  into smaller, modular files organized by feature (e.g., , ).
+    - **P2 - Super Admin Config Preview Tool:** Build a read-only preview in the Super Admin panel to see a tenant's effective configuration.
 
 **Completed work in this session**
-- **Admin Panel UI/UX Polish:** Enhanced all admin pages (, , , , , etc.) with improved UI states, feedback, micro-interactions, and visual hierarchy without altering layouts.
-- **Skeleton Loading Implementation:** Integrated context-aware skeleton loading states with a smooth shimmer animation across all admin pages to prevent layout jumps.
-- **Party Planner Elite Upgrade:**
-  - **Vendors Tab:** Implemented flexible vendor assignment (select existing, add new inline, Other text input).
-  - **Staff Tab:** Implemented Smart Suggest to generate a full staffing plan (roles, counts, shifts, wages) based on event type and guest count, with understaffing warnings and instant cost calculation.
-- **Reusable Components Created:**
-  - : For consistent status indicators.
-  - : For showing saving/saved states on forms.
-  - : For displaying text-based warnings and info.
-  - : For all skeleton loading states.
-- **Dark Theme Reversion:** Successfully reverted an attempted dark theme implementation at the user's request, restoring the original light theme while keeping all other UI enhancements.
-- **Deployment Health Check:** Ran a health check, which flagged some (likely false positive) issues with config files and a failed dashboard endpoint test, though manual verification showed services were running.
+- **Fixed Broken Vendor Page:** Diagnosed and fixed a complex Framer Motion animation bug in  that made the page appear blank.
+- **Elite Vendor System (Backend & Frontend):** Implemented a complete accounting-grade vendor management module, including a vendor directory with live balances (Payable/Receivable) and a detailed transaction ledger modal. This was verified by the testing agent.
+- **Elite Super Admin Control Plane (Backend & Frontend):** Built a comprehensive super admin UI and corresponding backend APIs to manage all tenant configurations, including feature flags, workflow rules, permissions, and more across 10 distinct modules.
+- **Super Admin to Tenant App Integration:** Successfully integrated the  as the source of truth for the tenant-facing application. App features and navigation are now dynamically rendered based on this configuration, and API access is protected by feature flag checks.
+- **Tenant Data Reset:** Identified the target tenant for a data reset and confirmed the reset script's logic, noting that the tenant's data was already empty.
 
 **Earlier issues found/mentioned but not fixed**
-- **Deployment Agent Discrepancy:** The deployment agent reported missing  and  config files, but the main agent verified they exist and are populated. It also reported a failed dashboard health check, but manual  tests passed. This suggests a potential issue with the health check script's pathing or timing.
+- **Deployment Agent Discrepancy:** A previous health check from the deployment agent reported missing config files and a failing dashboard endpoint, even though manual checks confirmed they were working. This discrepancy was not investigated.
 
 **Known issue recurrence from previous fork**
-- **Issue recurrence in previous fork:** Git repository corruption.
-- **Recurrence count:** 1
-- **Status:** RESOLVED
+- None.
 
 **Code Architecture**
 
@@ -88,84 +90,63 @@ The application is a functional multi-tenant Banquet Management SaaS platform. I
 **Key Technical Concepts**
 - **Backend:** FastAPI, MongoDB, Pydantic, JWT.
 - **Frontend:** React, React Router, Tailwind CSS, Shadcn UI, Framer Motion.
-- **Architecture:** Multi-Tenancy, RBAC, Feature Flagging.
-- **UI/UX Patterns:** Skeleton Loading, State-Driven UI (badges, cues), Optimistic UI (save feedback), Micro-interactions.
+- **Architecture:** Multi-Tenancy (controlled by a central  model), RBAC, dynamic Feature Flagging.
+- **State Management:** React Context API (, ).
 
 **key DB schema**
-*Existing Schema:*
-- , , , , 
-
-*New Schema Required for Vendor System:*
 - ****: 
 - ****: 
 - ****: 
-
-**changes in tech stack**
-None.
+- ****: 
 
 **All files of reference**
-*Files Created:*
-- 
-- 
-- 
-*Files Heavily Modified:*
-- 
--  (theme attempt and revert, shimmer animation added)
--  (major functional upgrade)
-- All pages under  (UI polish and skeleton integration)
-- 
-
-**Areas that need refactoring**:
--  remains a large monolith that would benefit from being split into separate router files.
--  has undergone significant changes with the theme attempt/revert and could be cleaned up to remove unused variables or classes.
-
-**key api endpoints**
-*New APIs Required for Vendor System:*
+*Files Heavily Modified in this session:*
 - 
 - 
 - 
 - 
 - 
+*Files Created in this session:*
 - 
 - 
-- 
+- All files under 
 
 **Critical Info for New Agent**
-- **PRIORITY 1 is the Vendor System:** The user has provided extremely detailed, non-negotiable requirements for fixing and upgrading the Vendor section. This is the main task.
-- **User Rejected Dark Theme:** Do not attempt to re-implement a dark theme. The user explicitly said looksbad and requested a revert. The current light theme with polished elements is the approved direction.
-- **Stick to UI Polish, Not Redesign:** The user has repeatedly emphasized that layouts, colors, and structure should NOT be changed. Enhancements should be made within the existing design framework.
-- **Follow the New Vendor Data Model:** The user specified a precise DB schema for vendors, bookings_vendors, and vendor_transactions. This must be implemented exactly as requested to support the ledger and balance logic.
-- **Vendor Page is BROKEN:** The immediate first step is to debug why  renders a blank screen before starting the new feature implementation.
+- **PRIORITY 1 is Party Planner & Expenses:** The user's latest request is to fix the broken Party Planner, restore the Expenses section, remove the Timeline, and add custom staff roles. This is the main task.
+- **Work is Booking-Driven:** All data in the Party Planner (vendors, staff, new expenses) MUST be linked to a . Enforce this in all models and APIs.
+- **Config-Driven App:** The application's features and rules are now controlled by the  document. All new logic must respect this configuration. Check feature flags and permissions on both the frontend and backend.
+- **No UI Redesign:** Stick to the existing UI patterns. The user wants functional fixes and minimal additions, not a visual overhaul.
 
 **documents and test reports created in this job**
--  (updated twice to reflect completed UI work)
+-  (Updated multiple times)
+-  (From testing the Elite Vendor System)
 
 **Last 10 User Messages and any pending HUMAN messages**
-10. : looksbad i will stick to previous ui - User rejects the dark theme.
-9. : Acknowledges and starts reverting the dark theme.
-8. : no improve skeleton loading - After the revert, user asks to specifically improve the skeleton loading animations.
-7. : Implements improved, context-aware skeletons with a better shimmer animation on the light theme.
-6. : Call Deployer Agent and Run Health Check to Check for Readiness for Deployment - User requests a pre-deployment check.
-5. : Runs health check and finds some potential (but likely false positive) issues.
-4. : vendor section is not working - User reports a new, critical bug.
-3. : Investigates, confirms the API works but the frontend page is blank.
-2. : Provides a very long, detailed specification to fix the broken vendor page and upgrade it to a full accounting-grade vendor management system.
-1. : Acknowledges the new, large task and prepares to start working on it.
+10. : Provides a detailed list of tasks: fix Party Planner, restore Expenses, remove Timeline, and add custom Staff roles.
+9.  : Confirms completion of the Config Integration task and asks to proceed.
+8.  : Provides a detailed list of tasks for integrating the Super Admin config with the tenant app and resetting data for one tenant.
+7.  : Confirms completion of the Super Admin panel and asks to proceed.
+6.  : Confirms to proceed with building the full Super Admin panel.
+5.  : Provides a detailed list of requirements for the Elite Super Admin Control Plane.
+4.  : Confirms to proceed with the frontend implementation of the Elite Vendor System.
+3.  : Confirms the plan to start the Elite Vendor System implementation.
+2.  : Provides a very long, detailed specification to fix the broken vendor page and upgrade it to an accounting-grade system.
+1.  : Reports that the vendor section is not working.
 
 **Project Health Check:**
-- **Broken:**  is not rendering data.
+- **Broken:**  is not functional. The Expenses module is missing entirely.
 - **Mocked:** None.
-- **Needs Refactoring:**  (monolith),  (cleanup after theme revert).
+- **Needs Refactoring:**  is a large monolith that should be broken into smaller router files.
 
 **3rd Party Integrations**
 - : For PDF generation.
 - : For frontend animations.
 
 **Testing status**
-- **Testing agent used after significant changes:** NO
+- **Testing agent used after significant changes:** YES (For the Elite Vendor System)
 - **Troubleshoot agent used after agent stuck in loop:** NO
 - **Test files created:** None.
-- **Known regressions:** The  page is non-functional.
+- **Known regressions:** The Party Planner module is broken.
 
 **Credentials to test flow:**
 - **Super Admin:**  / 
@@ -173,5 +154,4 @@ None.
 - **Tenant Reception:**  / 
 
 **What agent forgot to execute**
-- The agent did not start implementing the previous fork's pending tasks (**Phase 4: Dashboard Intelligence** and **Phase 5: Quality & Safety**) as the user immediately provided new, higher-priority UI tasks. These are now further down the backlog.
-- The agent did not fully resolve the discrepancy from the deployment health check (why it reported missing files and a failing dashboard test when manual checks passed).</analysis>
+- The agent has not yet addressed the discrepancy from the deployment health check reported in a previous session (why it reported missing files and a failing dashboard test when manual checks passed). This remains a low-priority background issue.</analysis>
