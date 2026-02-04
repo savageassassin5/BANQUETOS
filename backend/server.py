@@ -2498,14 +2498,15 @@ async def get_confirmed_bookings(current_user: dict = Depends(get_current_user))
     if current_user.get('role') != 'admin':
         raise HTTPException(status_code=403, detail="Admin access required")
     
+    tenant_filter = await get_tenant_filter(current_user)
     bookings = await db.bookings.find(
-        {"status": {"$in": ["confirmed", "completed"]}},
+        {"status": {"$in": ["confirmed", "completed"]}, **tenant_filter},
         {"_id": 0}
     ).sort("event_date", 1).to_list(100)
     
     # Enrich with party plan status
     for booking in bookings:
-        plan = await db.party_plans.find_one({"booking_id": booking['id']}, {"_id": 0})
+        plan = await db.party_plans.find_one({"booking_id": booking['id'], **tenant_filter}, {"_id": 0})
         booking['has_party_plan'] = plan is not None
         booking['party_plan'] = plan
     
@@ -2517,6 +2518,8 @@ async def get_vendor_payments(vendor_id: Optional[str] = None, current_user: dic
     # Only admin can see vendor payments
     if current_user.get('role') != 'admin':
         raise HTTPException(status_code=403, detail="Admin access required")
+    
+    tenant_filter = await get_tenant_filter(current_user)
     
     query = {}
     if vendor_id:
