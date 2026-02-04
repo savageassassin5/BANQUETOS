@@ -172,7 +172,7 @@ const PartyPlanningPage = () => {
         { value: 'helper', label: 'Helper', icon: Users, defaultWage: 400 },
         { value: 'supervisor', label: 'Supervisor', icon: UserCheck, defaultWage: 1000 },
         { value: 'usher', label: 'Usher', icon: User, defaultWage: 450 },
-        { value: 'custom', label: 'Other (Custom)', icon: User, defaultWage: 500 }
+        { value: 'custom', label: 'Custom Role', icon: User, defaultWage: 500 }
     ];
 
     useEffect(() => {
