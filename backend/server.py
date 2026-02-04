@@ -1611,6 +1611,9 @@ async def create_booking(booking_data: BookingCreate, current_user: dict = Depen
         linked_vendors=booking_data.linked_vendors
     )
     
+    # Set tenant_id for multi-tenant isolation
+    booking.tenant_id = current_user.get('tenant_id')
+    
     booking_doc = booking.model_dump()
     booking_doc['created_at'] = booking_doc['created_at'].isoformat()
     booking_doc['updated_at'] = booking_doc['updated_at'].isoformat()
