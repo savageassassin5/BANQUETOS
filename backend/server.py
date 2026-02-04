@@ -1780,6 +1780,12 @@ async def get_party_expenses(booking_id: str, current_user: dict = Depends(get_c
     if current_user.get('role') != 'admin':
         raise HTTPException(status_code=403, detail="Admin access required")
     
+    tenant_filter = await get_tenant_filter(current_user)
+    # Verify booking belongs to tenant
+    booking = await db.bookings.find_one({"id": booking_id, **tenant_filter}, {"_id": 0})
+    if not booking:
+        raise HTTPException(status_code=404, detail="Booking not found")
+    
     expenses = await db.party_expenses.find({"booking_id": booking_id}, {"_id": 0}).to_list(100)
     return expenses
 
@@ -1789,7 +1795,8 @@ async def create_party_expense(expense_data: PartyExpenseCreate, current_user: d
     if current_user.get('role') != 'admin':
         raise HTTPException(status_code=403, detail="Admin access required")
     
-    booking = await db.bookings.find_one({"id": expense_data.booking_id}, {"_id": 0})
+    tenant_filter = await get_tenant_filter(current_user)
+    booking = await db.bookings.find_one({"id": expense_data.booking_id, **tenant_filter}, {"_id": 0})
     if not booking:
         raise HTTPException(status_code=404, detail="Booking not found")
     
@@ -1804,7 +1811,7 @@ async def create_party_expense(expense_data: PartyExpenseCreate, current_user: d
     net_profit = booking['total_amount'] - total_expenses
     
     await db.bookings.update_one(
-        {"id": expense_data.booking_id},
+        {"id": expense_data.booking_id, **tenant_filter},
         {"$set": {
             "total_expenses": total_expenses,
             "net_profit": net_profit,
