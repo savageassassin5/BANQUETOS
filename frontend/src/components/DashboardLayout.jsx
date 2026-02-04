@@ -31,8 +31,8 @@ const navItems = [
 const DashboardLayout = ({ children }) => {
     const location = useLocation();
     const navigate = useNavigate();
-    const { user, logout } = useAuth();
-    const { isFeatureEnabled, getLabel } = useTenantConfig();
+    const { user, logout, hasFeature } = useAuth();
+    const { getLabel } = useTenantConfig();
     const [sidebarOpen, setSidebarOpen] = useState(false);
     
     const userRole = user?.role || 'reception';
@@ -43,12 +43,12 @@ const DashboardLayout = ({ children }) => {
         navigate('/');
     };
 
-    // Filter nav items based on user role AND feature flags from tenant_config
+    // Filter nav items based on user role AND feature flags from user's effective_features
     const filteredNavItems = navItems.filter(item => {
         // Check role
         if (!item.roles.includes(userRole)) return false;
-        // Check feature flag from tenant_config
-        if (item.feature && !isFeatureEnabled(item.feature)) return false;
+        // Check feature flag from user's effective_features
+        if (item.feature && !hasFeature(item.feature)) return false;
         return true;
     });
 
