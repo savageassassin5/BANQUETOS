@@ -5,6 +5,31 @@ BanquetOS is a multi-tenant SaaS with Elite Super Admin Control Plane and CONFIG
 
 ## Completed (Feb 2026)
 
+### ✅ PART C: Party Planner Module Fixes (Feb 4, 2026)
+
+#### C1. Restored Expenses Tab
+- Added "Expenses" tab to Party Planner (replaced Timeline tab)
+- Full CRUD functionality for booking expenses
+- Expense categories: staff, vendor, materials, transport, food, equipment, decoration, misc, other
+- Auto-updates booking profit calculations when expenses added/deleted
+- Shows staff wages from Staff tab separately (auto-calculated)
+
+#### C2. Removed Timeline Tab
+- Removed Timeline tab from Party Planner tabs (was: Overview, Vendors, Staff, **Timeline**, Profit)
+- New tabs: Overview, Vendors, Staff, **Expenses**, Profit
+- Timeline-related functions removed from codebase
+
+#### C3. Custom Staff Roles
+- Staff role dropdown now includes "Other (Custom)" option
+- When selected, shows inline text input to enter custom role name (e.g., "Bartender", "DJ Assistant")
+- Custom role names saved with staff assignments (`custom_role_name` field)
+
+#### C4. Backend Updates
+- `PartyExpense` model: Added `category` field
+- `POST /api/party-expenses`: Now returns full list of expenses (was returning single item)
+- `DELETE /api/party-expenses/{id}`: Now returns remaining expenses list
+- All expense operations update booking's `total_expenses` and `net_profit`
+
 ### ✅ PART A: Super Admin → Tenant App Integration
 
 #### A1. tenant_config as Source of Truth
@@ -85,38 +110,41 @@ BanquetOS is a multi-tenant SaaS with Elite Super Admin Control Plane and CONFIG
 
 ### Backend
 - `/app/backend/server.py`:
-  - Added `get_tenant_config()` helper (line 918)
-  - Updated `get_effective_features()` to use tenant_config (line 925)
-  - Added `check_feature_access()` for API enforcement (line 965)
-  - Added `check_permission()` for role-based API enforcement (line 980)
-  - Added `get_workflow_rule()` helper (line 1000)
-  - Renamed duplicate function to `get_tenant_config_api()` (line 4343)
-  - Added feature/permission checks to vendor ledger endpoints (lines 3351, 3398)
+  - `PartyExpense` model: Added `category` field
+  - `POST /api/party-expenses`: Returns full list
+  - `DELETE /api/party-expenses/{id}`: Returns remaining list
 
 ### Frontend
-- `/app/frontend/src/context/TenantConfigContext.js` - NEW
-  - Config fetching and caching
-  - `isFeatureEnabled()`, `hasPermission()`, `getWorkflowRule()`
-  - Version-based polling for sync
-  
-- `/app/frontend/src/App.js`:
-  - Wrapped app with `TenantConfigProvider`
-  - Updated `FeatureRoute` to use TenantConfigContext
-  
-- `/app/frontend/src/components/DashboardLayout.jsx`:
-  - Import `useTenantConfig`
-  - Filter sidebar by `isFeatureEnabled()`
-  - Support for dynamic labels via `getLabel()`
+- `/app/frontend/src/pages/PartyPlanningPage.jsx`:
+  - Replaced Timeline tab with Expenses tab
+  - Added expense CRUD UI (add/delete expenses)
+  - Added custom role input for Staff section
+  - Updated Overview card to show Expenses summary
+  - Added expense categories and staff wages display
 
 ---
 
-## Enforcement Points Summary
+## Upcoming Tasks (P1)
 
-| Area | UI Enforcement | API Enforcement |
-|------|---------------|-----------------|
-| Feature Flags | DashboardLayout sidebar, FeatureRoute | check_feature_access() |
-| Permissions | hasPermission() hooks | check_permission() |
-| Workflow Rules | getWorkflowRule() | get_workflow_rule() |
+1. **Party Planner Templates & Defaults Integration**
+   - Auto-apply default vendors, staff plans from `tenant_config` when creating new party plan
+
+2. **Workflow Rules Enforcement**
+   - Server-side enforcement for `advance_required`, `lock_edits_before_event`
+
+3. **Custom Fields Integration**
+   - Render and save custom booking fields from `tenant_config`
+
+4. **Role & Permission Enforcement**
+   - Complete enforcement across all modules
+
+## Future/Backlog (P2)
+
+1. **Refactor server.py**
+   - Break monolithic file into modular router files
+
+2. **Super Admin Config Preview**
+   - Read-only preview of tenant's effective configuration
 
 ---
 
