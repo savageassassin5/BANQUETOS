@@ -1338,6 +1338,7 @@ async def create_hall(hall_data: HallCreate, current_user: dict = Depends(get_cu
         raise HTTPException(status_code=403, detail="Not authorized")
     
     hall = Hall(**hall_data.model_dump())
+    hall.tenant_id = current_user.get('tenant_id')  # Set tenant_id for multi-tenant isolation
     hall_doc = hall.model_dump()
     hall_doc['created_at'] = hall_doc['created_at'].isoformat()
     await db.halls.insert_one(hall_doc)
@@ -1348,14 +1349,15 @@ async def update_hall(hall_id: str, hall_data: HallCreate, current_user: dict = 
     if current_user['role'] not in ['admin', 'staff']:
         raise HTTPException(status_code=403, detail="Not authorized")
     
+    tenant_filter = await get_tenant_filter(current_user)
     result = await db.halls.update_one(
-        {"id": hall_id},
+        {"id": hall_id, **tenant_filter},
         {"$set": hall_data.model_dump()}
     )
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Hall not found")
     
-    updated = await db.halls.find_one({"id": hall_id}, {"_id": 0})
+    updated = await db.halls.find_one({"id": hall_id, **tenant_filter}, {"_id": 0})
     return Hall(**updated)
 
 @api_router.delete("/halls/{hall_id}")
