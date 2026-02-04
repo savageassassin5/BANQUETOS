@@ -1490,55 +1490,181 @@ const PartyPlanningPage = () => {
                             </motion.div>
                         </TabsContent>
 
-                        {/* Timeline Tab */}
-                        <TabsContent value="timeline" className="space-y-4">
-                            <div className="flex items-center justify-between">
-                                <h3 className="font-medium text-gray-900">Run-of-Show Timeline</h3>
-                                <Button variant="outline" size="sm" onClick={regenerateTimeline}>
-                                    <RefreshCw className="h-4 w-4 mr-1" />
-                                    Regenerate
+                        {/* Expenses Tab */}
+                        <TabsContent value="expenses" className="space-y-4">
+                            {/* Expenses Summary Bar */}
+                            <div className="bg-slate-50 rounded-xl p-3 flex flex-wrap items-center justify-between gap-3">
+                                <div className="flex items-center gap-4 text-sm">
+                                    <span className="text-slate-500">Items: <strong className="text-slate-700">{expenses.length}</strong></span>
+                                    <span className="text-slate-500">Staff Wages: <strong className="text-amber-600">{formatCurrency(totalStaffCost)}</strong></span>
+                                    <span className="text-slate-500">Other Expenses: <strong className="text-red-600">{formatCurrency(totalExpenses)}</strong></span>
+                                    <span className="text-slate-500">Total: <strong className="text-rose-600">{formatCurrency(totalExpenses + totalStaffCost)}</strong></span>
+                                </div>
+                                <Button 
+                                    variant="outline" 
+                                    size="sm"
+                                    onClick={() => setShowAddExpense(true)}
+                                    className="bg-white"
+                                >
+                                    <Plus className="h-4 w-4 mr-1" />
+                                    Add Expense
                                 </Button>
                             </div>
 
-                            {planForm.timeline_tasks.length === 0 ? (
-                                <div className="text-center py-8 text-gray-500">
-                                    <Clock className="h-10 w-10 mx-auto mb-2 text-gray-300" />
-                                    <p className="text-sm">No timeline generated. Click &quot;Regenerate&quot; to create one.</p>
+                            {/* Add Expense Panel */}
+                            <AnimatePresence>
+                                {showAddExpense && (
+                                    <motion.div
+                                        initial={{ opacity: 0, height: 0 }}
+                                        animate={{ opacity: 1, height: 'auto' }}
+                                        exit={{ opacity: 0, height: 0 }}
+                                        className="bg-white border border-slate-200 rounded-xl p-4 space-y-4"
+                                    >
+                                        <div className="flex items-center justify-between">
+                                            <h4 className="font-medium text-gray-900">Add Expense</h4>
+                                            <Button variant="ghost" size="sm" onClick={() => setShowAddExpense(false)}>
+                                                <X className="h-4 w-4" />
+                                            </Button>
+                                        </div>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                            <Input
+                                                placeholder="Expense name *"
+                                                value={newExpenseForm.expense_name}
+                                                onChange={e => setNewExpenseForm(prev => ({ ...prev, expense_name: e.target.value }))}
+                                            />
+                                            <Input
+                                                type="number"
+                                                placeholder="Amount *"
+                                                value={newExpenseForm.amount || ''}
+                                                onChange={e => setNewExpenseForm(prev => ({ ...prev, amount: parseFloat(e.target.value) || 0 }))}
+                                            />
+                                        </div>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                            <Select 
+                                                value={newExpenseForm.category} 
+                                                onValueChange={v => setNewExpenseForm(prev => ({ ...prev, category: v }))}
+                                            >
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Category" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {expenseCategories.map(cat => (
+                                                        <SelectItem key={cat.value} value={cat.value}>{cat.label}</SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                            <Input
+                                                placeholder="Notes (optional)"
+                                                value={newExpenseForm.notes}
+                                                onChange={e => setNewExpenseForm(prev => ({ ...prev, notes: e.target.value }))}
+                                            />
+                                        </div>
+                                        <Button 
+                                            className="w-full"
+                                            disabled={!newExpenseForm.expense_name || newExpenseForm.amount <= 0 || expenseSaving}
+                                            onClick={addExpense}
+                                        >
+                                            {expenseSaving ? (
+                                                <>
+                                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                                    Adding...
+                                                </>
+                                            ) : (
+                                                'Add Expense'
+                                            )}
+                                        </Button>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+
+                            {/* Staff Wages Section */}
+                            {planForm.staff_assignments.length > 0 && (
+                                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+                                    <h4 className="font-medium text-amber-800 mb-3 flex items-center gap-2">
+                                        <Users className="h-4 w-4" />
+                                        Staff Wages (Auto-calculated)
+                                    </h4>
+                                    <div className="space-y-2">
+                                        {planForm.staff_assignments.map((staff, index) => {
+                                            const roleInfo = staffRoles.find(r => r.value === staff.role);
+                                            const roleName = staff.role === 'custom' ? (staff.custom_role_name || 'Custom Role') : (roleInfo?.label || staff.role);
+                                            const lineTotal = (parseInt(staff.count) || 1) * (parseFloat(staff.wage) || 0);
+                                            return (
+                                                <div key={index} className="flex justify-between text-sm">
+                                                    <span className="text-amber-700">{roleName} × {staff.count || 1}</span>
+                                                    <span className="font-medium text-amber-800">{formatCurrency(lineTotal)}</span>
+                                                </div>
+                                            );
+                                        })}
+                                        <div className="flex justify-between pt-2 border-t border-amber-300">
+                                            <span className="font-medium text-amber-800">Total Staff Wages</span>
+                                            <span className="font-bold text-amber-900">{formatCurrency(totalStaffCost)}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Expenses List */}
+                            {expenses.length === 0 ? (
+                                <div className="text-center py-8 text-slate-500">
+                                    <Receipt className="h-10 w-10 mx-auto mb-2 text-slate-300" />
+                                    <p className="text-sm">No expenses recorded yet.</p>
+                                    <p className="text-xs text-slate-400 mt-1">Click &quot;Add Expense&quot; to track costs for this event.</p>
                                 </div>
                             ) : (
                                 <div className="space-y-2">
-                                    {planForm.timeline_tasks.sort((a, b) => a.time.localeCompare(b.time)).map((task, index) => (
-                                        <motion.div
-                                            key={task.id || index}
-                                            initial={{ opacity: 0, y: 10 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            transition={{ delay: index * 0.03 }}
-                                            className={`flex items-center gap-4 p-3 rounded-xl border ${
-                                                task.status === 'done' ? 'bg-green-50 border-green-200' : 'bg-white border-gray-100'
-                                            }`}
-                                        >
-                                            <button
-                                                onClick={() => updateTimelineTask(task.id, task.status === 'done' ? 'pending' : 'done')}
-                                                className={`w-6 h-6 rounded-full flex items-center justify-center transition-colors ${
-                                                    task.status === 'done' 
-                                                        ? 'bg-green-500 text-white' 
-                                                        : 'border-2 border-gray-300 text-gray-300 hover:border-green-500'
-                                                }`}
+                                    {expenses.map((expense) => {
+                                        const categoryInfo = expenseCategories.find(c => c.value === expense.category);
+                                        return (
+                                            <motion.div
+                                                key={expense.id}
+                                                initial={{ opacity: 0, y: 10 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                className="flex items-center justify-between p-3 bg-white border border-slate-200 rounded-xl"
                                             >
-                                                {task.status === 'done' && <CheckCircle className="h-4 w-4" />}
-                                            </button>
-                                            <div className="text-sm font-mono text-gray-500 w-16">{task.time}</div>
-                                            <div className="flex-1">
-                                                <div className={`font-medium ${task.status === 'done' ? 'text-gray-400 line-through' : 'text-gray-900'}`}>
-                                                    {task.title}
+                                                <div className="flex items-center gap-3">
+                                                    <div className="p-2 bg-red-100 rounded-lg">
+                                                        <IndianRupee className="h-4 w-4 text-red-600" />
+                                                    </div>
+                                                    <div>
+                                                        <div className="font-medium text-slate-900">{expense.expense_name}</div>
+                                                        <div className="text-xs text-slate-500 flex items-center gap-2">
+                                                            <Badge variant="secondary" className="text-xs">{categoryInfo?.label || expense.category}</Badge>
+                                                            {expense.notes && <span>{expense.notes}</span>}
+                                                        </div>
+                                                    </div>
                                                 </div>
-                                                <div className="text-xs text-gray-500">{task.owner}</div>
-                                            </div>
-                                            <Badge variant="secondary" className="text-xs capitalize">{task.owner_type}</Badge>
-                                        </motion.div>
-                                    ))}
+                                                <div className="flex items-center gap-3">
+                                                    <span className="font-bold text-red-600">{formatCurrency(expense.amount)}</span>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        onClick={() => deleteExpense(expense.id)}
+                                                        className="text-slate-400 hover:text-rose-600"
+                                                    >
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </Button>
+                                                </div>
+                                            </motion.div>
+                                        );
+                                    })}
                                 </div>
                             )}
+
+                            {/* Total Expense Summary */}
+                            <motion.div 
+                                className="bg-gradient-to-r from-red-50 to-rose-50 border border-red-200 rounded-xl p-4 flex items-center justify-between"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                            >
+                                <div>
+                                    <span className="font-medium text-red-800">Total Event Expenses</span>
+                                    <p className="text-xs text-red-600 mt-0.5">
+                                        Staff wages + {expenses.length} other expense{expenses.length !== 1 ? 's' : ''}
+                                    </p>
+                                </div>
+                                <span className="text-2xl font-bold text-red-600">{formatCurrency(totalExpenses + totalStaffCost)}</span>
+                            </motion.div>
                         </TabsContent>
 
                         {/* Profit Tab */}
