@@ -126,9 +126,12 @@ export const TenantConfigProvider = ({ children }) => {
 
     // Feature flag check
     const isFeatureEnabled = useCallback((feature) => {
-        if (!config?.feature_flags) return true; // Default to enabled
+        // If still loading or no config, default to enabled
+        if (loading || !config?.feature_flags) return true;
+        // If config has the feature flag, check its value
+        // Return true if feature is true or undefined (not explicitly disabled)
         return config.feature_flags[feature] !== false;
-    }, [config]);
+    }, [config, loading]);
 
     // Permission check for current user's role
     const hasPermission = useCallback((permission) => {
