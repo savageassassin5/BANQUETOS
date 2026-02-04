@@ -1773,7 +1773,7 @@ async def get_party_expenses(booking_id: str, current_user: dict = Depends(get_c
     expenses = await db.party_expenses.find({"booking_id": booking_id}, {"_id": 0}).to_list(100)
     return expenses
 
-@api_router.post("/party-expenses", response_model=PartyExpense)
+@api_router.post("/party-expenses")
 async def create_party_expense(expense_data: PartyExpenseCreate, current_user: dict = Depends(get_current_user)):
     # Only admin can add expenses
     if current_user.get('role') != 'admin':
@@ -1802,7 +1802,8 @@ async def create_party_expense(expense_data: PartyExpenseCreate, current_user: d
         }}
     )
     
-    return expense
+    # Return all expenses for this booking
+    return all_expenses
 
 @api_router.delete("/party-expenses/{expense_id}")
 async def delete_party_expense(expense_id: str, current_user: dict = Depends(get_current_user)):
