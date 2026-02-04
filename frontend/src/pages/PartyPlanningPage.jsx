@@ -121,6 +121,14 @@ const PartyPlanningPage = () => {
     const [staffSuggestions, setStaffSuggestions] = useState([]);
     const [activeTab, setActiveTab] = useState('overview');
     
+    // Expenses state
+    const [expenses, setExpenses] = useState([]);
+    const [showAddExpense, setShowAddExpense] = useState(false);
+    const [newExpenseForm, setNewExpenseForm] = useState({
+        expense_name: '', amount: 0, category: 'other', notes: ''
+    });
+    const [expenseSaving, setExpenseSaving] = useState(false);
+    
     // Vendor management state
     const [vendorAssignments, setVendorAssignments] = useState([]);
     const [showAddVendor, setShowAddVendor] = useState(false);
@@ -145,13 +153,26 @@ const PartyPlanningPage = () => {
         notes: ''
     });
 
+    // Expense categories
+    const expenseCategories = [
+        { value: 'staff', label: 'Staff Wages' },
+        { value: 'vendor', label: 'Vendor Payment' },
+        { value: 'materials', label: 'Materials & Supplies' },
+        { value: 'transport', label: 'Transport' },
+        { value: 'food', label: 'Food & Beverages' },
+        { value: 'equipment', label: 'Equipment Rental' },
+        { value: 'decoration', label: 'Decoration' },
+        { value: 'misc', label: 'Miscellaneous' },
+        { value: 'other', label: 'Other' }
+    ];
+
     const staffRoles = [
         { value: 'waiter', label: 'Waiter', icon: User, defaultWage: 500 },
         { value: 'chef', label: 'Chef', icon: ChefHat, defaultWage: 800 },
         { value: 'helper', label: 'Helper', icon: Users, defaultWage: 400 },
         { value: 'supervisor', label: 'Supervisor', icon: UserCheck, defaultWage: 1000 },
         { value: 'usher', label: 'Usher', icon: User, defaultWage: 450 },
-        { value: 'custom', label: 'Other', icon: User, defaultWage: 500 }
+        { value: 'custom', label: 'Other (Custom)', icon: User, defaultWage: 500 }
     ];
 
     useEffect(() => {
