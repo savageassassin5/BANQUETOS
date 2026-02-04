@@ -556,6 +556,7 @@ class PartyExpenseCreate(BaseModel):
     booking_id: str
     expense_name: str
     amount: float
+    category: str = "other"  # staff, vendor, materials, transport, food, equipment, decoration, misc, other
     notes: str = ""
     vendor_id: Optional[str] = None  # Link expense to vendor
 
@@ -565,6 +566,7 @@ class PartyExpense(BaseModel):
     booking_id: str
     expense_name: str
     amount: float
+    category: str = "other"
     notes: str = ""
     vendor_id: Optional[str] = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
