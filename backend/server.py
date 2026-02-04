@@ -938,9 +938,13 @@ async def get_effective_features(tenant_id: Optional[str]) -> dict:
     
     # First try tenant_config (new system)
     config = await get_tenant_config(tenant_id)
+    print(f"DEBUG get_effective_features: tenant_id={tenant_id}, config_found={config is not None}")
     if config and config.get('feature_flags'):
-        return config['feature_flags']
+        flags = config['feature_flags']
+        print(f"DEBUG: Using tenant_config feature_flags with {len(flags)} features")
+        return flags
     
+    print("DEBUG: Falling back to old system")
     # Fallback to old system (plan features + overrides)
     tenant = await db.tenants.find_one({"id": tenant_id}, {"_id": 0})
     if not tenant:
