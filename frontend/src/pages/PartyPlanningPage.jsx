@@ -513,30 +513,67 @@ const PartyPlanningPage = () => {
         return [];
     }, [vendorAssignments, selectedBooking]);
 
-    // Timeline management
-    const updateTimelineTask = async (taskId, newStatus) => {
-        if (!selectedBooking) return;
+    // Calculate total expenses
+    const totalExpenses = useMemo(() => {
+        return expenses.reduce((sum, e) => sum + (e.amount || 0), 0);
+    }, [expenses]);
+
+    // Expense management functions
+    const addExpense = async () => {
+        if (!selectedBooking || !newExpenseForm.expense_name || newExpenseForm.amount <= 0) {
+            toast.error('Please fill expense name and amount');
+            return;
+        }
+        
+        setExpenseSaving(true);
         try {
-            await partyPlanningAPI.updateTimelineTask(selectedBooking.id, taskId, newStatus);
-            // Refresh plan
-            await loadPlanByBooking(selectedBooking.id);
-            toast.success('Task updated');
+            const payload = {
+                booking_id: selectedBooking.id,
+                expense_name: newExpenseForm.expense_name,
+                amount: parseFloat(newExpenseForm.amount) || 0,
+                category: newExpenseForm.category,
+                notes: newExpenseForm.notes
+            };
+            
+            const res = await partyExpensesAPI.create(payload);
+            setExpenses(res.data || []);
+            setNewExpenseForm({ expense_name: '', amount: 0, category: 'other', notes: '' });
+            setShowAddExpense(false);
+            toast.success('Expense added');
+            
+            // Reload profit snapshot
+            try {
+                const profitRes = await partyPlanningAPI.getProfitSnapshot(selectedBooking.id);
+                setProfitSnapshot(profitRes.data);
+            } catch (e) {
+                console.error('Failed to reload profit:', e);
+            }
         } catch (error) {
-            toast.error('Failed to update task');
+            toast.error('Failed to add expense');
+            console.error(error);
+        } finally {
+            setExpenseSaving(false);
         }
     };
 
-    const regenerateTimeline = async () => {
+    const deleteExpense = async (expenseId) => {
         if (!selectedBooking) return;
+        
         try {
-            const res = await partyPlanningAPI.generateTimeline(selectedBooking.id);
-            setPlanForm(prev => ({
-                ...prev,
-                timeline_tasks: res.data.timeline
-            }));
-            toast.success('Timeline regenerated');
+            const res = await partyExpensesAPI.delete(expenseId);
+            setExpenses(res.data || []);
+            toast.success('Expense deleted');
+            
+            // Reload profit snapshot
+            try {
+                const profitRes = await partyPlanningAPI.getProfitSnapshot(selectedBooking.id);
+                setProfitSnapshot(profitRes.data);
+            } catch (e) {
+                console.error('Failed to reload profit:', e);
+            }
         } catch (error) {
-            toast.error('Failed to regenerate timeline');
+            toast.error('Failed to delete expense');
+            console.error(error);
         }
     };
 
