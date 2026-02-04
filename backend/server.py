@@ -1622,7 +1622,8 @@ async def create_booking(booking_data: BookingCreate, current_user: dict = Depen
 
 @api_router.put("/bookings/{booking_id}", response_model=Booking)
 async def update_booking(booking_id: str, update_data: BookingUpdate, current_user: dict = Depends(get_current_user)):
-    existing = await db.bookings.find_one({"id": booking_id}, {"_id": 0})
+    tenant_filter = await get_tenant_filter(current_user)
+    existing = await db.bookings.find_one({"id": booking_id, **tenant_filter}, {"_id": 0})
     if not existing:
         raise HTTPException(status_code=404, detail="Booking not found")
     
@@ -1639,7 +1640,8 @@ async def update_booking(booking_id: str, update_data: BookingUpdate, current_us
             "hall_id": hall_id,
             "event_date": event_date,
             "slot": slot,
-            "status": {"$nin": ["cancelled"]}
+            "status": {"$nin": ["cancelled"]},
+            **tenant_filter
         }, {"_id": 0})
         
         if conflict:
