@@ -1455,12 +1455,14 @@ async def delete_menu_item(item_id: str, current_user: dict = Depends(get_curren
 # ==================== CUSTOMER ROUTES ====================
 @api_router.get("/customers", response_model=List[Customer])
 async def get_customers(current_user: dict = Depends(get_current_user)):
-    customers = await db.customers.find({}, {"_id": 0}).to_list(1000)
+    tenant_filter = await get_tenant_filter(current_user)
+    customers = await db.customers.find(tenant_filter, {"_id": 0}).to_list(1000)
     return [Customer(**c) for c in customers]
 
 @api_router.get("/customers/{customer_id}", response_model=Customer)
 async def get_customer(customer_id: str, current_user: dict = Depends(get_current_user)):
-    customer = await db.customers.find_one({"id": customer_id}, {"_id": 0})
+    tenant_filter = await get_tenant_filter(current_user)
+    customer = await db.customers.find_one({"id": customer_id, **tenant_filter}, {"_id": 0})
     if not customer:
         raise HTTPException(status_code=404, detail="Customer not found")
     return Customer(**customer)
