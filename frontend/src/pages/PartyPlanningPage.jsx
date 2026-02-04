@@ -19,7 +19,7 @@ import { StatusBadge } from '../components/ui/status-badge';
 import { SaveFeedback, useSaveState } from '../components/ui/save-feedback';
 import { IntelligenceCue } from '../components/ui/intelligence-cue';
 import { SkeletonPartyPlanning, SkeletonEventCard, SkeletonStaffRow, SkeletonVendorRow } from '../components/ui/skeletons';
-import { bookingsAPI, vendorAPI, partyPlanningAPI, customersAPI, hallsAPI } from '../lib/api';
+import { bookingsAPI, vendorAPI, partyPlanningAPI, partyExpensesAPI, customersAPI, hallsAPI } from '../lib/api';
 import { formatCurrency } from '../lib/utils';
 import { toast } from 'sonner';
 import { useAuth } from '../context/AuthContext';
